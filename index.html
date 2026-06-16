@@ -61,18 +61,22 @@
   .theme span{display:block;font-size:10px;text-align:center;padding:7px 2px;color:var(--muted);letter-spacing:.01em}
   .theme.active span{color:var(--ink);font-weight:600}
 
-  .presets{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .presets{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
   .preset{cursor:pointer;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel2);transition:transform .12s,border-color .15s,box-shadow .15s}
   .preset:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(40,34,18,.10)}
   .preset.active{border-color:var(--accentB);box-shadow:0 0 0 3px var(--ring)}
-  .preset .pv{position:relative;height:88px;overflow:hidden}
-  .preset .pv .mk{position:absolute;left:50%;top:39%;transform:translate(-50%,-50%);z-index:1}
-  .preset .pv .mk svg{width:14px;height:14px;display:block}
+  .preset .pv{position:relative;height:148px;overflow:hidden}
+  .preset .pv .mk{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:2}
+  .preset .pv .mk svg{width:13px;height:13px;display:block}
   .preset .pv .grad{position:absolute;inset:0;z-index:1}
-  .preset .pv .ttl{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:10px 12px}
-  .preset .pv .nm{display:block;font-size:12.5px;font-weight:700;letter-spacing:.02em;line-height:1.1}
-  .preset .pv .ul{display:block;width:24px;height:2px;margin-top:5px;border-radius:2px;opacity:.9}
-  .preset .meta{padding:8px 11px;font-size:10.5px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .preset .pv .ttl{position:absolute;left:0;right:0;z-index:3;padding:0 10px;display:flex;flex-direction:column;align-items:center;text-align:center}
+  .preset .pv .ttl.pos-bottom{bottom:12px}
+  .preset .pv .ttl.pos-top{top:12px}
+  .preset .pv .ttl.pos-center{top:50%;transform:translateY(-50%)}
+  .preset .pv .eb{display:block;font-size:6px;letter-spacing:.2em;opacity:.85;margin-bottom:3px;font-weight:600;text-transform:uppercase}
+  .preset .pv .nm{display:block;font-size:13.5px;font-weight:700;letter-spacing:.04em;line-height:1.05;text-transform:uppercase}
+  .preset .pv .ul{display:block;width:26px;height:1.5px;margin-top:5px;border-radius:2px;opacity:.85}
+  .preset .meta{padding:8px 11px;font-size:10.5px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:6px;background:var(--panel)}
   .preset .meta span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
@@ -111,7 +115,13 @@
   #stagecredit{position:absolute;bottom:14px;right:20px;font-size:10.5px;color:var(--muted);opacity:.62;letter-spacing:.02em;font-family:'Outfit',sans-serif}
   #poster{position:relative;container-type:inline-size;overflow:hidden;border-radius:3px;
     box-shadow:0 32px 70px rgba(54,44,22,.20),0 8px 20px rgba(54,44,22,.10);
-    height:86vh;width:auto;aspect-ratio:2/3;background:#0a1726;transition:aspect-ratio .25s}
+    height:86vh;width:auto;aspect-ratio:2/3;background:#0a1726;transition:aspect-ratio .25s;
+    user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  #poster img,#poster canvas{-webkit-user-drag:none;user-drag:none}
+  /* watermark pratinjau — hanya tampil di layar, TIDAK ikut di file unduhan */
+  #pvwm{position:absolute;inset:0;z-index:7;pointer-events:none;mix-blend-mode:difference;opacity:.4;
+    background-repeat:repeat;background-position:center;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='150'%3E%3Ctext x='6' y='100' transform='rotate(-28 6 100)' font-family='Outfit,Arial,sans-serif' font-size='19' font-weight='700' fill='white' letter-spacing='3'%3EMEMORA PRATINJAU%3C/text%3E%3C/svg%3E")}
   #map{position:absolute;inset:0}
   #map.exporting{position:fixed;left:0;top:0;z-index:1}
   #feather{position:absolute;inset:0;z-index:2;pointer-events:none}
@@ -228,12 +238,6 @@
       </section>
 
       <section class="block">
-        <h2>Pilihan Siap Pakai</h2>
-        <div class="presets" id="presets"></div>
-        <div class="hint">Klik satu desain jadi — warna, font, tata letak, penanda & teks momen otomatis terpasang. Langsung bisa unduh.</div>
-      </section>
-
-      <section class="block">
         <h2>Tema Warna</h2>
         <div class="themes" id="themes"></div>
         <button class="btn ghost mt12" id="randomBtn" style="width:100%">Acak Tema</button>
@@ -315,6 +319,12 @@
         </select>
       </section>
 
+      <section class="block">
+        <h2>Pilihan Siap Pakai</h2>
+        <div class="presets" id="presets"></div>
+        <div class="hint">Klik satu desain jadi — warna, font, tata letak, penanda & teks momen otomatis terpasang. Langsung bisa unduh.</div>
+      </section>
+
       <details class="adv">
         <summary>Lanjutan: warna, lapisan, kredit <span class="chev">▾</span></summary>
         <div class="inner">
@@ -343,7 +353,10 @@
       </details>
     </div>
 
-    <div id="exportbar"><button class="btn primary" id="exportBtn" style="width:100%;padding:13px">Unduh Poster</button></div>
+    <div id="exportbar">
+      <button class="btn primary" id="exportBtn" style="width:100%;padding:13px">Unduh Poster HD — tanpa watermark</button>
+      <button class="btn ghost" id="freeBtn" style="width:100%;padding:11px;margin-top:8px">Coba gratis (resolusi kecil + watermark)</button>
+    </div>
   </aside>
 
   <main id="stage">
@@ -364,6 +377,7 @@
       </div>
       <div class="wm" id="wmL"></div>
       <div class="wm" id="wmR">© OpenStreetMap</div>
+      <div id="pvwm"></div>
     </div>
     <div id="stagecredit">Peta © OpenStreetMap · OpenFreeMap</div>
   </main>
@@ -518,19 +532,33 @@ const PRESETS=[
  {id:'p10',name:'Rumah Hangat',    theme:'krem',  font:'Poppins',            pos:'bottom', ul:'line', marker:'dot',   feather:10, tpl:'OUR HOME'},
 ];
 const MGLYPH={none:'·',dot:'●',ring:'◎',heart:'♥',star:'★',cross:'✚'};
-function pvSVG(t){let g='';
-  for(let i=1;i<7;i++){const y=i*12;g+=`<line x1="0" y1="${y+(i%2?-1.5:1)}" x2="100" y2="${y+(i%2?1.5:-1)}" stroke="${t.road2}" stroke-width="0.7" opacity="0.5"/>`;}
-  for(let i=1;i<8;i++){const x=i*13;g+=`<line x1="${x+(i%2?-1:1)}" y1="0" x2="${x+(i%2?1:-1)}" y2="80" stroke="${t.road2}" stroke-width="0.7" opacity="0.5"/>`;}
-  g+=`<line x1="0" y1="56" x2="100" y2="22" stroke="${t.road}" stroke-width="1.9"/>`;
-  g+=`<line x1="16" y1="0" x2="66" y2="80" stroke="${t.road}" stroke-width="1.9"/>`;
-  g+=`<line x1="0" y1="34" x2="100" y2="48" stroke="${t.road}" stroke-width="1.3" opacity="0.85"/>`;
-  return `<svg viewBox="0 0 100 80" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">${g}</svg>`;}
+/* air = biru default, taman = hijau default; nada disesuaikan tema terang/gelap */
+function relLum(hex){let h=hex.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return(0.299*r+0.587*g+0.114*b)/255;}
+function pvColors(t){return relLum(t.bg)<0.5?{pw:'#35608c',pg:'#33623f'}:{pw:'#aacbed',pg:'#c7e2b9'};}
+/* mini-peta mirip poster jadi: taman (hijau), sungai (biru), jaringan jalan */
+function pvSVG(t,pw,pg){const r=t.road,r2=t.road2;let g='';
+  g+=`<path d="M-4,82 Q15,66 32,80 Q47,91 61,84 L63,124 L-4,124 Z" fill="${pg}" opacity="0.92"/>`;
+  g+=`<rect x="71" y="11" width="40" height="31" rx="8" fill="${pg}" opacity="0.82"/>`;
+  g+=`<path d="M-4,24 C22,35 27,58 50,64 C73,70 79,99 106,105" fill="none" stroke="${pw}" stroke-width="9" stroke-linecap="round" opacity="0.95"/>`;
+  for(let i=0;i<6;i++){const x=i*22-6;g+=`<line x1="${x}" y1="-2" x2="${x+10}" y2="122" stroke="${r2}" stroke-width="0.8" opacity="0.42"/>`;}
+  for(let i=0;i<7;i++){const y=i*20-4;g+=`<line x1="-2" y1="${y}" x2="102" y2="${y+8}" stroke="${r2}" stroke-width="0.8" opacity="0.42"/>`;}
+  g+=`<line x1="-4" y1="44" x2="106" y2="62" stroke="${r}" stroke-width="2.4" stroke-linecap="round"/>`;
+  g+=`<line x1="36" y1="-4" x2="60" y2="124" stroke="${r}" stroke-width="2.4" stroke-linecap="round"/>`;
+  g+=`<line x1="-4" y1="96" x2="106" y2="34" stroke="${r}" stroke-width="1.5" stroke-linecap="round" opacity="0.85"/>`;
+  return `<svg viewBox="0 0 100 120" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">${g}</svg>`;}
 const pEl=$('presets');
-PRESETS.forEach(p=>{const t=THEMES.find(x=>x.id===p.theme);const c=document.createElement('div');c.className='preset';c.dataset.id=p.id;
-  c.innerHTML=`<div class="pv" style="background:${t.bg}">`+pvSVG(t)+
+PRESETS.forEach(p=>{const t=THEMES.find(x=>x.id===p.theme);const pc=pvColors(t);const c=document.createElement('div');c.className='preset';c.dataset.id=p.id;
+  const scrim=p.pos==='top'?`linear-gradient(to bottom,${t.bg} 3%,${hexA(t.bg,0)} 50%)`
+    :p.pos==='center'?`linear-gradient(${hexA(t.bg,0)} 24%,${hexA(t.bg,0.88)} 50%,${hexA(t.bg,0)} 76%)`
+    :`linear-gradient(to top,${t.bg} 3%,${hexA(t.bg,0)} 50%)`;
+  c.innerHTML=`<div class="pv" style="background:${t.bg}">`+pvSVG(t,pc.pw,pc.pg)+
     (p.marker!=='none'?`<div class="mk" style="color:${t.text}">${markerSVG(p.marker,t.text)}</div>`:'')+
-    `<div class="grad" style="background:linear-gradient(to top,${t.bg} 10%,transparent 70%)"></div>`+
-    `<div class="ttl"><span class="nm" style="color:${t.text}">${p.name}</span><span class="ul" style="background:${t.text}"></span></div></div>`+
+    `<div class="grad" style="background:${scrim}"></div>`+
+    `<div class="ttl pos-${p.pos}">`+
+      (p.tpl?`<span class="eb" style="color:${t.text}">${p.tpl}</span>`:'')+
+      `<span class="nm" style="color:${t.text};font-family:'${p.font}',serif">${p.name}</span>`+
+      (p.ul!=='none'?`<span class="ul" style="background:${t.text}"></span>`:'')+
+    `</div></div>`+
     `<div class="meta"><span>${p.font}</span><span style="color:${t.text};font-size:13px">${MGLYPH[p.marker]}</span></div>`;
   c.onclick=()=>applyPreset(p,c);pEl.appendChild(c);});
 function applyPreset(p,card){
@@ -644,12 +672,26 @@ function drawMarkerC(ctx,x,y,r,type){ctx.save();ctx.fillStyle=cur.text;ctx.strok
   else if(type==='heart'){const s=r/16;ctx.beginPath();ctx.moveTo(x,y+5*s);ctx.bezierCurveTo(x,y+1*s,x-8*s,y-6*s,x-8*s,y-1*s);ctx.bezierCurveTo(x-8*s,y+5*s,x,y+9*s,x,y+12*s);ctx.bezierCurveTo(x,y+9*s,x+8*s,y+5*s,x+8*s,y-1*s);ctx.bezierCurveTo(x+8*s,y-6*s,x,y-6*s,x,y+5*s);ctx.closePath();ctx.fill();}
   ctx.restore();}
 
-async function exportPoster(){
-  if(!map)return;const ov=$('overlay');ov.style.display='flex';$('ovtext').textContent='Merender peta resolusi tinggi…';
+/* watermark dipanggang ke canvas — hanya untuk unduhan GRATIS */
+function drawPreviewWM(ctx,W,H){
+  ctx.save();ctx.translate(W/2,H/2);ctx.rotate(-28*Math.PI/180);ctx.translate(-W/2,-H/2);
+  const fs=Math.max(W*0.030,14);ctx.font=`700 ${fs}px "Outfit",Arial,sans-serif`;
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.letterSpacing=(fs*0.12)+'px';
+  ctx.lineWidth=Math.max(1,fs*0.05);
+  const stepX=W*0.52,stepY=H*0.13,txt='MEMORA · PRATINJAU';
+  for(let y=-H;y<H*2;y+=stepY){const off=((y/stepY)|0)%2?stepX/2:0;
+    for(let x=-W;x<W*2;x+=stepX){
+      ctx.strokeStyle='rgba(0,0,0,0.16)';ctx.strokeText(txt,x+off,y);
+      ctx.fillStyle='rgba(255,255,255,0.18)';ctx.fillText(txt,x+off,y);}}
+  ctx.letterSpacing='0px';ctx.restore();
+}
+async function exportPoster(opts={}){
+  const free=!!opts.free;
+  if(!map)return;const ov=$('overlay');ov.style.display='flex';$('ovtext').textContent=free?'Menyiapkan pratinjau gratis…':'Merender peta resolusi tinggi…';
   try{
     const font=($('t_customfont').value.trim()||$('t_font').value);
     try{await document.fonts.load(`600 64px "${font}"`);await document.fonts.load(`italic 400 32px "${font}"`);await document.fonts.load(`500 32px "${font}"`);}catch(_){}
-    const img=await captureMap(2200);$('ovtext').textContent='Menyusun poster…';
+    const img=await captureMap(free?1100:2200);$('ovtext').textContent='Menyusun poster…';
     const Wd=img.width,Hd=img.height,cx=Wd/2;
     const cv=document.createElement('canvas');cv.width=Wd;cv.height=Hd;const ctx=cv.getContext('2d');
     ctx.drawImage(img,0,0);
@@ -723,9 +765,13 @@ async function exportPoster(){
     if(showOsm){ctx.globalAlpha=.3;ctx.textAlign='right';ctx.fillText('© OpenStreetMap',Wd-Wd*0.045,Hd-Wd*0.035);}
     ctx.globalAlpha=1;
 
+    // watermark hanya untuk versi gratis (versi berbayar tetap bersih)
+    if(free)drawPreviewWM(ctx,Wd,Hd);
+
     const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download='poster-'+(title.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'peta')+'.png';a.click();URL.revokeObjectURL(a.href);
+    const slug=(title.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'peta');
+    a.download=(free?'pratinjau-':'poster-')+slug+'.png';a.click();URL.revokeObjectURL(a.href);
   }catch(err){alert('Gagal mengekspor: '+err.message);console.error(err);}finally{ov.style.display='none';}
 }
 /* ====== PAYWALL / PEMBAYARAN ====== */
@@ -747,8 +793,13 @@ function openPay(){
 }
 function closePay(){$('pay').style.display='none';}
 function unlock(){unlocked=true;closePay();doDownload();}
-async function doDownload(){await exportPoster();}
+async function doDownload(){await exportPoster({free:false});}
 $('exportBtn').onclick=openPay;
+$('freeBtn').onclick=()=>exportPoster({free:true});
+/* anti-save sederhana: matikan klik-kanan & drag gambar pada poster */
+(()=>{const pst=$('poster');if(!pst)return;
+  pst.addEventListener('contextmenu',e=>e.preventDefault());
+  pst.addEventListener('dragstart',e=>e.preventDefault());})();
 $('payClose').onclick=closePay;
 $('pay').addEventListener('click',e=>{if(e.target===$('pay'))closePay();});
 $('payDone').onclick=unlock;
