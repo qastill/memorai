@@ -400,7 +400,9 @@
           <li>Klik tombol di bawah — poster otomatis terunduh.</li>
         </ol>
         <div class="acts">
-          <button class="btn primary" id="payDone" style="padding:13px">Saya Sudah Bayar — Unduh Sekarang</button>
+          <button class="btn primary" id="payAuto" style="padding:13px">Bayar Otomatis (QRIS / e-wallet)</button>
+          <button class="link" id="payManual">Sudah bayar manual? Buka unduhan</button>
+          <button class="btn ghost" id="payDone" style="padding:13px;display:none">Saya Sudah Bayar — Unduh Sekarang</button>
           <button class="link" id="haveCode">Punya kode akses? Masukkan di sini</button>
           <div class="codeRow" id="codeRow">
             <input type="text" id="codeInput" placeholder="Kode akses" />
@@ -787,6 +789,44 @@ $('haveCode').onclick=()=>{$('codeRow').style.display='flex';$('codeInput').focu
 $('codeSubmit').onclick=()=>{const v=$('codeInput').value.trim().toUpperCase();
   if(CONFIG.KODE_AKSES.map(c=>c.toUpperCase()).includes(v))unlock();else $('payErr').style.display='block';};
 $('codeInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('codeSubmit').click();});
+
+/* ====== PEMBAYARAN OTOMATIS (Mayar + backend /api) ====== */
+$('payManual').onclick=()=>{$('payDone').style.display='block';$('payManual').style.display='none';};
+$('payAuto').onclick=startAutoPay;
+async function startAutoPay(){
+  const btn=$('payAuto');const old=btn.textContent;btn.disabled=true;btn.textContent='Membuat tagihan…';
+  $('payErr').style.display='none';
+  try{
+    const r=await fetch('/api/create-payment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.paymentUrl)throw new Error(j.error||'Pembayaran otomatis belum aktif. Coba lagi nanti.');
+    try{localStorage.setItem('memora_order',j.orderId);}catch(_){}
+    location.href=j.paymentUrl;            // arahkan ke halaman bayar Mayar
+  }catch(e){
+    $('payErr').textContent='Gagal: '+e.message;$('payErr').style.display='block';
+    btn.disabled=false;btn.textContent=old;
+  }
+}
+/* Setelah balik dari Mayar (redirect ?order=...), cek status lalu buka unduhan otomatis */
+async function checkPaymentReturn(){
+  const url=new URL(location.href);let oid=url.searchParams.get('order');
+  if(!oid){try{oid=localStorage.getItem('memora_order');}catch(_){}}
+  if(!oid)return;
+  const ov=$('overlay');ov.style.display='flex';$('ovtext').textContent='Memeriksa pembayaran…';
+  let tries=0;
+  const finish=()=>{try{localStorage.removeItem('memora_order');}catch(_){}history.replaceState({},'',location.pathname);};
+  const poll=async()=>{
+    tries++;
+    try{const r=await fetch('/api/status?order='+encodeURIComponent(oid));const j=await r.json();
+      if(j.paid){finish();ov.style.display='none';unlocked=true;closePay();doDownload();return;}
+    }catch(_){}
+    if(tries<25){setTimeout(poll,3000);}
+    else{ov.style.display='none';finish();
+      alert('Pembayaran belum terkonfirmasi. Jika sudah membayar, tunggu sebentar lalu tekan "Unduh Poster" lagi.');}
+  };
+  poll();
+}
+window.addEventListener('load',checkPaymentReturn);
 </script>
 </body>
 </html>
