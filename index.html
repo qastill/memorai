@@ -115,7 +115,13 @@
   #stagecredit{position:absolute;bottom:14px;right:20px;font-size:10.5px;color:var(--muted);opacity:.62;letter-spacing:.02em;font-family:'Outfit',sans-serif}
   #poster{position:relative;container-type:inline-size;overflow:hidden;border-radius:3px;
     box-shadow:0 32px 70px rgba(54,44,22,.20),0 8px 20px rgba(54,44,22,.10);
-    height:86vh;width:auto;aspect-ratio:2/3;background:#0a1726;transition:aspect-ratio .25s}
+    height:86vh;width:auto;aspect-ratio:2/3;background:#0a1726;transition:aspect-ratio .25s;
+    user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  #poster img,#poster canvas{-webkit-user-drag:none;user-drag:none}
+  /* watermark pratinjau — hanya tampil di layar, TIDAK ikut di file unduhan */
+  #pvwm{position:absolute;inset:0;z-index:7;pointer-events:none;mix-blend-mode:difference;opacity:.4;
+    background-repeat:repeat;background-position:center;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='150'%3E%3Ctext x='6' y='100' transform='rotate(-28 6 100)' font-family='Outfit,Arial,sans-serif' font-size='19' font-weight='700' fill='white' letter-spacing='3'%3EMEMORA PRATINJAU%3C/text%3E%3C/svg%3E")}
   #map{position:absolute;inset:0}
   #map.exporting{position:fixed;left:0;top:0;z-index:1}
   #feather{position:absolute;inset:0;z-index:2;pointer-events:none}
@@ -347,7 +353,10 @@
       </details>
     </div>
 
-    <div id="exportbar"><button class="btn primary" id="exportBtn" style="width:100%;padding:13px">Unduh Poster</button></div>
+    <div id="exportbar">
+      <button class="btn primary" id="exportBtn" style="width:100%;padding:13px">Unduh Poster HD — tanpa watermark</button>
+      <button class="btn ghost" id="freeBtn" style="width:100%;padding:11px;margin-top:8px">Coba gratis (resolusi kecil + watermark)</button>
+    </div>
   </aside>
 
   <main id="stage">
@@ -368,6 +377,7 @@
       </div>
       <div class="wm" id="wmL"></div>
       <div class="wm" id="wmR">© OpenStreetMap</div>
+      <div id="pvwm"></div>
     </div>
     <div id="stagecredit">Peta © OpenStreetMap · OpenFreeMap</div>
   </main>
@@ -662,12 +672,26 @@ function drawMarkerC(ctx,x,y,r,type){ctx.save();ctx.fillStyle=cur.text;ctx.strok
   else if(type==='heart'){const s=r/16;ctx.beginPath();ctx.moveTo(x,y+5*s);ctx.bezierCurveTo(x,y+1*s,x-8*s,y-6*s,x-8*s,y-1*s);ctx.bezierCurveTo(x-8*s,y+5*s,x,y+9*s,x,y+12*s);ctx.bezierCurveTo(x,y+9*s,x+8*s,y+5*s,x+8*s,y-1*s);ctx.bezierCurveTo(x+8*s,y-6*s,x,y-6*s,x,y+5*s);ctx.closePath();ctx.fill();}
   ctx.restore();}
 
-async function exportPoster(){
-  if(!map)return;const ov=$('overlay');ov.style.display='flex';$('ovtext').textContent='Merender peta resolusi tinggi…';
+/* watermark dipanggang ke canvas — hanya untuk unduhan GRATIS */
+function drawPreviewWM(ctx,W,H){
+  ctx.save();ctx.translate(W/2,H/2);ctx.rotate(-28*Math.PI/180);ctx.translate(-W/2,-H/2);
+  const fs=Math.max(W*0.030,14);ctx.font=`700 ${fs}px "Outfit",Arial,sans-serif`;
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.letterSpacing=(fs*0.12)+'px';
+  ctx.lineWidth=Math.max(1,fs*0.05);
+  const stepX=W*0.52,stepY=H*0.13,txt='MEMORA · PRATINJAU';
+  for(let y=-H;y<H*2;y+=stepY){const off=((y/stepY)|0)%2?stepX/2:0;
+    for(let x=-W;x<W*2;x+=stepX){
+      ctx.strokeStyle='rgba(0,0,0,0.16)';ctx.strokeText(txt,x+off,y);
+      ctx.fillStyle='rgba(255,255,255,0.18)';ctx.fillText(txt,x+off,y);}}
+  ctx.letterSpacing='0px';ctx.restore();
+}
+async function exportPoster(opts={}){
+  const free=!!opts.free;
+  if(!map)return;const ov=$('overlay');ov.style.display='flex';$('ovtext').textContent=free?'Menyiapkan pratinjau gratis…':'Merender peta resolusi tinggi…';
   try{
     const font=($('t_customfont').value.trim()||$('t_font').value);
     try{await document.fonts.load(`600 64px "${font}"`);await document.fonts.load(`italic 400 32px "${font}"`);await document.fonts.load(`500 32px "${font}"`);}catch(_){}
-    const img=await captureMap(2200);$('ovtext').textContent='Menyusun poster…';
+    const img=await captureMap(free?1100:2200);$('ovtext').textContent='Menyusun poster…';
     const Wd=img.width,Hd=img.height,cx=Wd/2;
     const cv=document.createElement('canvas');cv.width=Wd;cv.height=Hd;const ctx=cv.getContext('2d');
     ctx.drawImage(img,0,0);
@@ -741,9 +765,13 @@ async function exportPoster(){
     if(showOsm){ctx.globalAlpha=.3;ctx.textAlign='right';ctx.fillText('© OpenStreetMap',Wd-Wd*0.045,Hd-Wd*0.035);}
     ctx.globalAlpha=1;
 
+    // watermark hanya untuk versi gratis (versi berbayar tetap bersih)
+    if(free)drawPreviewWM(ctx,Wd,Hd);
+
     const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download='poster-'+(title.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'peta')+'.png';a.click();URL.revokeObjectURL(a.href);
+    const slug=(title.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'peta');
+    a.download=(free?'pratinjau-':'poster-')+slug+'.png';a.click();URL.revokeObjectURL(a.href);
   }catch(err){alert('Gagal mengekspor: '+err.message);console.error(err);}finally{ov.style.display='none';}
 }
 /* ====== PAYWALL / PEMBAYARAN ====== */
@@ -765,8 +793,13 @@ function openPay(){
 }
 function closePay(){$('pay').style.display='none';}
 function unlock(){unlocked=true;closePay();doDownload();}
-async function doDownload(){await exportPoster();}
+async function doDownload(){await exportPoster({free:false});}
 $('exportBtn').onclick=openPay;
+$('freeBtn').onclick=()=>exportPoster({free:true});
+/* anti-save sederhana: matikan klik-kanan & drag gambar pada poster */
+(()=>{const pst=$('poster');if(!pst)return;
+  pst.addEventListener('contextmenu',e=>e.preventDefault());
+  pst.addEventListener('dragstart',e=>e.preventDefault());})();
 $('payClose').onclick=closePay;
 $('pay').addEventListener('click',e=>{if(e.target===$('pay'))closePay();});
 $('payDone').onclick=unlock;
