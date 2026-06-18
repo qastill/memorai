@@ -216,6 +216,21 @@
     .slider:before{width:21px;height:21px}
     .switch input:checked+.slider:before{transform:translateX(19px)}
   }
+
+  /* ====== Langkah 1-2-3 + akordion + polish ====== */
+  .steps-intro{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:16px 24px 6px}
+  .steps-intro .si{position:relative;font-size:11px;color:var(--muted);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 10px 9px 11px;line-height:1.3}
+  .steps-intro .si b{display:block;color:var(--ink);font-size:11.5px;margin-top:3px;font-weight:600;letter-spacing:-.01em}
+  .steps-intro .si i{position:absolute;top:8px;right:9px;font-style:normal;font-size:10px;font-weight:700;color:var(--accent);opacity:.7}
+  /* judul section jadi tombol akordion */
+  section.block > h2{cursor:pointer;justify-content:flex-start}
+  section.block > h2::before{display:none}
+  section.block > h2 .num{width:20px;height:20px;border-radius:50%;background:var(--accentB);color:#3a2a05;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none}
+  section.block > h2 .hchev{margin-left:auto;color:var(--faint);font-size:12px;transition:transform .2s}
+  section.block.collapsed > h2 .hchev{transform:rotate(-90deg)}
+  section.block.collapsed > h2{margin-bottom:0}
+  section.block.collapsed > *:not(h2){display:none!important}
+  section.block > h2:hover .hchev{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -889,6 +904,34 @@ async function checkPaymentReturn(){
   poll();
 }
 window.addEventListener('load',checkPaymentReturn);
+
+/* ====== Sidebar lebih simpel: alur 1-2-3 + akordion ====== */
+(function(){
+  const scroll=document.querySelector('.scroll');if(!scroll)return;
+  // 1) Pindahkan "Pilihan Siap Pakai" ke posisi ke-2 (tepat setelah Lokasi)
+  const blocks=[...scroll.querySelectorAll('section.block')];
+  const presetBlock=blocks.find(b=>b.querySelector('#presets'));
+  if(presetBlock&&blocks[0]&&blocks[0]!==presetBlock&&blocks[1]!==presetBlock){blocks[0].after(presetBlock);}
+  // 2) Intro 3 langkah
+  if(!scroll.querySelector('.steps-intro')){
+    const intro=document.createElement('div');intro.className='steps-intro';
+    intro.innerHTML='<div class="si"><i>1</i>Mulai dari<b>Pilih lokasi</b></div>'+
+      '<div class="si"><i>2</i>Sekali klik<b>Pilih gaya</b></div>'+
+      '<div class="si"><i>3</i>Langsung<b>Unduh poster</b></div>';
+    scroll.insertBefore(intro,scroll.firstChild);
+  }
+  // 3) Jadikan tiap section akordion bernomor; buka 2 langkah pertama saja
+  const ordered=[...scroll.querySelectorAll('section.block')];
+  ordered.forEach((b,i)=>{
+    const h=b.querySelector('h2');if(!h)return;
+    if(!h.querySelector('.num')){
+      const num=document.createElement('span');num.className='num';num.textContent=String(i+1);h.insertBefore(num,h.firstChild);
+      const chev=document.createElement('span');chev.className='hchev';chev.textContent='▾';h.appendChild(chev);
+      h.addEventListener('click',()=>b.classList.toggle('collapsed'));
+    }
+    if(i>=2)b.classList.add('collapsed');
+  });
+})();
 </script>
 </body>
 </html>
