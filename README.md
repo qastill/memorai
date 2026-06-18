@@ -4,8 +4,9 @@ Aplikasi web (satu file `index.html`) untuk membuat poster peta personal dari da
 
 ## Katalog kota Indonesia (preview + edit) — `katalog.html`
 
-Halaman katalog bergaya "platform poster": **101 kota se-Indonesia tersusun per pulau**
-(Sumatra, Jawa, Bali & Nusa Tenggara, Kalimantan, Sulawesi, Maluku, Papua), dengan **pencarian** dan **filter per pulau**.
+Halaman katalog bergaya "platform poster": **seluruh kabupaten & kota se-Indonesia (519) tersusun per pulau**
+(Sumatra, Jawa, Bali & Nusa Tenggara, Kalimantan, Sulawesi, Maluku, Papua), urut **barat → timur**, dengan **pencarian** dan **filter per pulau**.
+Tiap kartu menampilkan thumbnail peta asli (dirender lazy + cache). Koordinat tiap wilayah dihitung dari titik tengah batas administrasi (geoBoundaries ADM2).
 
 Klik kartu kota → terbuka **editor pratinjau langsung**: ganti **tema/warna** (latar, jalan, air, taman, teks), atur **zoom**,
 ubah **judul/subjudul**, lalu **Unduh A3 HD** (3508 × 4961 px, 300 DPI) tanpa watermark.
