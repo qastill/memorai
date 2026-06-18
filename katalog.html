@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Memora — Katalog Poster Kota Indonesia</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.7.3/maplibre-gl.min.css" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:wght@600;700&family=Oswald:wght@500;600&family=Poppins:wght@500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{--bg:#0a0f17;--card:#111a26;--line:#1d2a3a;--accent:#e8b339;--txt:#e7edf5;--mut:#8aa0b8}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Montserrat,system-ui,sans-serif;background:var(--bg);color:var(--txt)}
+  a{color:var(--accent)}
+  header{padding:20px 26px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(10,15,23,.92);backdrop-filter:blur(8px);z-index:30}
+  h1{margin:0;font-size:19px;letter-spacing:.4px}
+  h1 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--accent);margin-right:8px}
+  p.sub{margin:6px 0 0;color:var(--mut);font-size:13px;line-height:1.6;max-width:760px}
+  .tools{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:14px}
+  .search{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+  .search input{flex:1;background:none;border:none;outline:none;color:var(--txt);font:inherit;font-size:14px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line);background:transparent;color:var(--mut);border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500}
+  .chip.on{background:var(--accent);color:#1a1305;border-color:var(--accent);font-weight:600}
+  .wrap{padding:18px 26px 60px;max-width:1280px;margin:0 auto}
+  .island{margin:26px 0 6px;font-size:15px;letter-spacing:.5px;color:var(--accent);display:flex;align-items:center;gap:10px}
+  .island .cnt{color:var(--mut);font-size:12px;font-weight:400}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:14px;margin-top:10px}
+  .cell{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .12s,border-color .12s}
+  .cell:hover{transform:translateY(-3px);border-color:var(--accent)}
+  .cell .pv{aspect-ratio:.7071;position:relative;background:#0a1726;overflow:hidden}
+  .cell .pv img.thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .35s}
+  .cell .pv.loaded img.thumb{opacity:1}
+  .cell .pv .ld{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#2a3b50;font-size:11px;letter-spacing:.5px}
+  .cell .pv.loaded .ld{display:none}
+  .cell .pv .nm{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-size:12px;font-weight:600;letter-spacing:1.5px;color:#e8b339;z-index:2}
+  .cell .pv .sc{position:absolute;inset:0;background:linear-gradient(to top,#0a1726 4%,rgba(10,23,38,0) 42%);z-index:1}
+  .cell .cap{padding:9px 11px;font-size:12px}
+  .cell .cap b{display:block;font-weight:600;font-size:13px}
+  .cell .cap span{color:var(--mut);font-size:11px}
+  .empty{color:var(--mut);font-size:14px;padding:40px 0;text-align:center}
+  .foot{color:var(--mut);font-size:12px;line-height:1.6;border-top:1px solid var(--line);padding-top:16px;margin-top:34px}
+
+  /* ===== MODAL EDITOR ===== */
+  #modal{position:fixed;inset:0;background:rgba(4,8,13,.86);z-index:50;display:none;align-items:stretch;justify-content:center}
+  #modal.show{display:flex}
+  .sheet{background:var(--bg);width:100%;max-width:1160px;margin:auto;max-height:96vh;display:flex;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .mp{flex:0 0 44%;background:#070b11;display:flex;align-items:center;justify-content:center;padding:22px;position:relative}
+  .posterFrame{width:100%;max-width:420px;aspect-ratio:.7071;position:relative;container-type:size;border-radius:6px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+  #pmap{position:absolute;inset:0}
+  .feather{position:absolute;inset:0;pointer-events:none}
+  .scrim{position:absolute;inset:0;pointer-events:none}
+  .ptext{position:absolute;left:0;right:0;bottom:9cqh;text-align:center;padding:0 8cqw;color:#e8b339}
+  .ptitle{font-size:8cqw;font-weight:600;letter-spacing:.16em;line-height:1.05;margin:0}
+  .pul{height:.4cqw;background:currentColor;width:42%;margin:3.4cqh auto;opacity:.85}
+  .psub{font-size:3.2cqw;font-weight:400;letter-spacing:.32em;margin:0;opacity:.92}
+  .pcoord{font-size:2.7cqw;font-weight:400;letter-spacing:.18em;margin:2.6cqh 0 0;opacity:.7}
+  .posterFrame .wm{position:absolute;bottom:3cqw;right:4cqw;font-size:2cqw;opacity:.32;color:#e8b339;display:none}
+  .mc{flex:1;padding:20px 22px;overflow-y:auto}
+  .mc h2{margin:0 0 2px;font-size:17px}
+  .mc .pr{color:var(--mut);font-size:12px;margin:0 0 16px}
+  .lbl{font-size:12px;color:var(--mut);margin:14px 0 7px;text-transform:uppercase;letter-spacing:.6px}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .field{flex:1;min-width:120px}
+  .field input[type=text]{width:100%;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px 12px;color:var(--txt);font:inherit;font-size:14px}
+  .themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px}
+  .th{border:1px solid var(--line);border-radius:9px;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:5px;align-items:center}
+  .th.on{border-color:var(--accent)}
+  .th .sw{display:flex;width:100%;height:18px;border-radius:5px;overflow:hidden}
+  .th .sw i{flex:1}
+  .th span{font-size:11px;color:var(--mut)}
+  .colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:9px}
+  .col{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--mut)}
+  .col input[type=color]{width:30px;height:30px;border:none;background:none;border-radius:7px;padding:0;cursor:pointer}
+  .sld{display:flex;align-items:center;gap:10px}
+  .sld input{flex:1}
+  .toggles{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px}
+  .tg{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--mut)}
+  .tg input{accent-color:var(--accent)}
+  .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;align-items:center}
+  button.btn{font-family:inherit;font-weight:600;border:none;border-radius:10px;padding:12px 18px;cursor:pointer;font-size:14px}
+  .btn.primary{background:var(--accent);color:#1a1305}
+  .btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .close{position:absolute;top:12px;right:14px;background:rgba(0,0,0,.35);border:none;color:#fff;width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer;z-index:5}
+  #ovl{position:fixed;inset:0;background:rgba(4,8,13,.7);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:60;color:#fff}
+  .spin{width:40px;height:40px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media(max-width:760px){.sheet{flex-direction:column;max-height:100vh}.mp{flex:none}.posterFrame{max-width:280px}}
+</style>
+</head>
+<body>
+<header>
+  <nav style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+    <a href="./" style="font-size:12px;font-weight:600;padding:7px 13px;border-radius:999px;text-decoration:none;background:transparent;color:#cdd9e6;border:1px solid #2a3b50">✏️ Editor</a>
+    <a href="katalog.html" style="font-size:12px;font-weight:600;padding:7px 13px;border-radius:999px;text-decoration:none;background:#e8b339;color:#1a1305">🗺️ Katalog</a>
+    <a href="batch.html" style="font-size:12px;font-weight:600;padding:7px 13px;border-radius:999px;text-decoration:none;background:transparent;color:#cdd9e6;border:1px solid #2a3b50">⚡ Batch 38 Kota</a>
+  </nav>
+  <h1><span class="dot"></span> MEMORA — Katalog Poster Kota Indonesia</h1>
+  <p class="sub">Pilih kota mana pun (tersusun per pulau), <b>atur warna, zoom & teks</b> di pratinjau, lalu unduh poster <b>A3 HD (300 DPI)</b> tanpa watermark.
+  Tidak ketemu? Ketik nama kota/tempat untuk dicari lewat OpenStreetMap.</p>
+  <div class="tools">
+    <div class="search"><span>🔎</span><input id="q" placeholder="Cari kota… (mis. Bandung, Ambon, Solo)" /></div>
+    <div class="chips" id="chips"></div>
+  </div>
+</header>
+
+<div class="wrap" id="wrap"></div>
+
+<!-- MODAL EDITOR -->
+<div id="modal">
+  <div class="sheet">
+    <button class="close" id="closeBtn">×</button>
+    <div class="mp">
+      <div class="posterFrame" id="posterFrame">
+        <div id="pmap"></div>
+        <div class="feather" id="feather"></div>
+        <div class="scrim" id="scrim"></div>
+        <div class="ptext" id="ptext">
+          <h2 class="ptitle" id="ptitle">KOTA</h2>
+          <div class="pul" id="pul"></div>
+          <p class="psub" id="psub">PROVINSI, INDONESIA</p>
+          <p class="pcoord" id="pcoord">0.0000° N / 0.0000° E</p>
+        </div>
+        <div class="wm" id="pwm">© OpenStreetMap</div>
+      </div>
+    </div>
+    <div class="mc">
+      <h2 id="mTitle">Kota</h2>
+      <p class="pr" id="mProv">Provinsi</p>
+
+      <div class="lbl">Teks</div>
+      <div class="row">
+        <div class="field"><input type="text" id="iTitle" placeholder="Judul" /></div>
+        <div class="field"><input type="text" id="iSub" placeholder="Subjudul" /></div>
+      </div>
+
+      <div class="lbl">Tema</div>
+      <div class="themes" id="themes"></div>
+
+      <div class="lbl">Warna kustom</div>
+      <div class="colors">
+        <label class="col"><input type="color" id="c_bg"> Latar</label>
+        <label class="col"><input type="color" id="c_road"> Jalan</label>
+        <label class="col"><input type="color" id="c_road2"> Jalan kecil</label>
+        <label class="col"><input type="color" id="c_water"> Air</label>
+        <label class="col"><input type="color" id="c_green"> Taman</label>
+        <label class="col"><input type="color" id="c_text"> Teks</label>
+      </div>
+
+      <div class="lbl">Zoom</div>
+      <div class="sld"><input type="range" id="zoom" min="10" max="16" step="0.1" /><span id="zval" style="font-size:12px;color:var(--mut);width:30px">13</span></div>
+
+      <div class="toggles">
+        <label class="tg"><input type="checkbox" id="t_coord" checked> Koordinat</label>
+        <label class="tg"><input type="checkbox" id="t_osm"> Kredit © OpenStreetMap</label>
+      </div>
+
+      <div class="acts">
+        <button class="btn primary" id="dl">Unduh A3 HD</button>
+        <button class="btn ghost" id="rand">Acak warna</button>
+        <span style="font-size:12px;color:var(--mut)">3508 × 4961 px · 300 DPI</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="ovl"><div class="spin"></div><p id="ovt">Merender A3 HD…</p></div>
+
+<!-- panggung render thumbnail (di luar layar) -->
+<div style="position:fixed;left:-99999px;top:0"><div id="thumbmap" style="width:320px;height:452px"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.7.3/maplibre-gl.min.js"></script>
+<script>
+const OFM="https://tiles.openfreemap.org/planet";const $=id=>document.getElementById(id);
+
+/* ===== TEMA (sama dengan index.html) ===== */
+const THEMES=[
+  {id:'navy',name:'Biru Malam',bg:'#0a1726',water:'#0d2236',green:'#0e2334',building:'#0d2336',bline:'#163150',road:'#e8b339',road2:'#7e6733',text:'#e8b339'},
+  {id:'tinta',name:'Klasik Tinta',bg:'#f3f0e8',water:'#cdd9df',green:'#dde4d2',building:'#e6dfcf',bline:'#d6cdba',road:'#1b1b1b',road2:'#8a8a8a',text:'#1b1b1b'},
+  {id:'mono',name:'Monokrom',bg:'#ffffff',water:'#ececec',green:'#f2f2f2',building:'#f0f0f0',bline:'#e2e2e2',road:'#0f0f0f',road2:'#a6a6a6',text:'#0f0f0f'},
+  {id:'krem',name:'Krem Hangat',bg:'#f6efe2',water:'#d8c7a8',green:'#e6dcc2',building:'#efe6d2',bline:'#e0d3b8',road:'#6b4f2c',road2:'#b39a72',text:'#5a4326'},
+  {id:'sage',name:'Sage Lembut',bg:'#eef0e8',water:'#cdd8c8',green:'#dde3d2',building:'#e6e8de',bline:'#d6dac9',road:'#3f4a3a',road2:'#9aa890',text:'#384032'},
+  {id:'rose',name:'Rose',bg:'#f7ecec',water:'#e3cfd2',green:'#eee0df',building:'#f0e6e6',bline:'#e6d4d4',road:'#8a3b46',road2:'#c79aa0',text:'#7a2f3a'},
+  {id:'hutan',name:'Hutan',bg:'#0c1c13',water:'#0f3128',green:'#123a26',building:'#0f3122',bline:'#1d4a32',road:'#f0eddf',road2:'#5f8a64',text:'#f0eddf'},
+  {id:'blue',name:'Blueprint',bg:'#0b3a66',water:'#0f4878',green:'#0e4070',building:'#0f4576',bline:'#2a6098',road:'#dcebff',road2:'#5f8fc0',text:'#eaf4ff'},
+  {id:'senja',name:'Senja',bg:'#241029',water:'#3a1c39',green:'#321831',building:'#311830',bline:'#4a2747',road:'#ffb86b',road2:'#9c5a6a',text:'#ffd9a0'},
+];
+const FONT='Montserrat';
+let cur={...THEMES[0]};
+
+/* ===== DATA KOTA per PULAU ===== */
+const DATA={
+ 'Sumatra':[
+  ['Banda Aceh','Aceh',5.5483,95.3238],['Sabang','Aceh',5.8933,95.3214],['Lhokseumawe','Aceh',5.1801,97.1507],['Langsa','Aceh',4.4683,97.9683],['Subulussalam','Aceh',2.6447,97.9996],
+  ['Medan','Sumatera Utara',3.5895,98.6742],['Binjai','Sumatera Utara',3.5972,98.4854],['Tebing Tinggi','Sumatera Utara',3.3285,99.1625],['Pematangsiantar','Sumatera Utara',2.9595,99.0687],['Tanjungbalai','Sumatera Utara',2.9657,99.7986],['Sibolga','Sumatera Utara',1.7427,98.7792],['Padang Sidempuan','Sumatera Utara',1.3793,99.2716],['Gunungsitoli','Sumatera Utara',1.2880,97.6149],
+  ['Padang','Sumatera Barat',-0.9471,100.4172],['Bukittinggi','Sumatera Barat',-0.3055,100.3692],['Padang Panjang','Sumatera Barat',-0.4637,100.4006],['Payakumbuh','Sumatera Barat',-0.2207,100.6306],['Sawahlunto','Sumatera Barat',-0.6817,100.7793],['Solok','Sumatera Barat',-0.7918,100.6541],['Pariaman','Sumatera Barat',-0.6266,100.1201],
+  ['Pekanbaru','Riau',0.5071,101.4478],['Dumai','Riau',1.6708,101.4475],
+  ['Tanjungpinang','Kepulauan Riau',0.9186,104.4558],['Batam','Kepulauan Riau',1.0456,104.0305],
+  ['Jambi','Jambi',-1.6101,103.6131],['Sungai Penuh','Jambi',-2.0635,101.3939],
+  ['Palembang','Sumatera Selatan',-2.9761,104.7754],['Lubuklinggau','Sumatera Selatan',-3.2966,102.8617],['Pagar Alam','Sumatera Selatan',-4.0217,103.2522],['Prabumulih','Sumatera Selatan',-3.4321,104.2356],
+  ['Pangkalpinang','Kep. Bangka Belitung',-2.1316,106.1169],
+  ['Bengkulu','Bengkulu',-3.8004,102.2655],
+  ['Bandar Lampung','Lampung',-5.3971,105.2668],['Metro','Lampung',-5.1131,105.3068],
+ ],
+ 'Jawa':[
+  ['Serang','Banten',-6.1200,106.1503],['Cilegon','Banten',-6.0174,106.0541],['Tangerang','Banten',-6.1783,106.6319],['Tangerang Selatan','Banten',-6.2889,106.7180],
+  ['Jakarta','DKI Jakarta',-6.2088,106.8456],
+  ['Bandung','Jawa Barat',-6.9175,107.6191],['Bekasi','Jawa Barat',-6.2383,106.9756],['Bogor','Jawa Barat',-6.5971,106.8060],['Cimahi','Jawa Barat',-6.8722,107.5425],['Cirebon','Jawa Barat',-6.7320,108.5523],['Depok','Jawa Barat',-6.4025,106.7942],['Sukabumi','Jawa Barat',-6.9197,106.9270],['Tasikmalaya','Jawa Barat',-7.3274,108.2207],['Banjar','Jawa Barat',-7.3711,108.5341],
+  ['Semarang','Jawa Tengah',-6.9667,110.4167],['Surakarta','Jawa Tengah',-7.5755,110.8243],['Magelang','Jawa Tengah',-7.4706,110.2178],['Salatiga','Jawa Tengah',-7.3305,110.5084],['Pekalongan','Jawa Tengah',-6.8886,109.6753],['Tegal','Jawa Tengah',-6.8694,109.1402],
+  ['Yogyakarta','DI Yogyakarta',-7.7956,110.3695],
+  ['Surabaya','Jawa Timur',-7.2575,112.7521],['Malang','Jawa Timur',-7.9839,112.6214],['Batu','Jawa Timur',-7.8672,112.5239],['Blitar','Jawa Timur',-8.0954,112.1609],['Kediri','Jawa Timur',-7.8480,112.0178],['Madiun','Jawa Timur',-7.6298,111.5239],['Mojokerto','Jawa Timur',-7.4722,112.4338],['Pasuruan','Jawa Timur',-7.6453,112.9075],['Probolinggo','Jawa Timur',-7.7543,113.2159],
+ ],
+ 'Bali & Nusa Tenggara':[
+  ['Denpasar','Bali',-8.6705,115.2126],
+  ['Mataram','Nusa Tenggara Barat',-8.5833,116.1167],['Bima','Nusa Tenggara Barat',-8.4605,118.7269],
+  ['Kupang','Nusa Tenggara Timur',-10.1772,123.6070],
+ ],
+ 'Kalimantan':[
+  ['Pontianak','Kalimantan Barat',-0.0263,109.3425],['Singkawang','Kalimantan Barat',0.9050,108.9889],
+  ['Palangka Raya','Kalimantan Tengah',-2.2089,113.9213],
+  ['Banjarmasin','Kalimantan Selatan',-3.3194,114.5908],['Banjarbaru','Kalimantan Selatan',-3.4572,114.8347],
+  ['Samarinda','Kalimantan Timur',-0.5022,117.1536],['Balikpapan','Kalimantan Timur',-1.2379,116.8529],['Bontang','Kalimantan Timur',0.1324,117.4924],
+  ['Tarakan','Kalimantan Utara',3.3071,117.6312],['Tanjung Selor','Kalimantan Utara',2.8375,117.3616],
+ ],
+ 'Sulawesi':[
+  ['Manado','Sulawesi Utara',1.4748,124.8421],['Bitung','Sulawesi Utara',1.4450,125.1828],['Tomohon','Sulawesi Utara',1.3247,124.8369],['Kotamobagu','Sulawesi Utara',0.7269,124.3144],
+  ['Gorontalo','Gorontalo',0.5435,123.0568],
+  ['Palu','Sulawesi Tengah',-0.8917,119.8707],
+  ['Mamuju','Sulawesi Barat',-2.6748,118.8885],
+  ['Makassar','Sulawesi Selatan',-5.1477,119.4327],['Parepare','Sulawesi Selatan',-4.0135,119.6255],['Palopo','Sulawesi Selatan',-2.9925,120.1969],
+  ['Kendari','Sulawesi Tenggara',-3.9778,122.5150],['Baubau','Sulawesi Tenggara',-5.4769,122.6189],
+ ],
+ 'Maluku':[
+  ['Ambon','Maluku',-3.6954,128.1814],['Tual','Maluku',-5.6406,132.7510],
+  ['Ternate','Maluku Utara',0.7905,127.3853],['Tidore','Maluku Utara',0.6864,127.4003],['Sofifi','Maluku Utara',0.7333,127.5667],
+ ],
+ 'Papua':[
+  ['Jayapura','Papua',-2.5337,140.7181],
+  ['Manokwari','Papua Barat',-0.8615,134.0620],['Sorong','Papua Barat Daya',-0.8762,131.2558],
+  ['Merauke','Papua Selatan',-8.4932,140.4019],['Nabire','Papua Tengah',-3.3666,135.4969],['Wamena','Papua Pegunungan',-4.0985,138.9509],
+ ],
+};
+const ISLANDS=Object.keys(DATA);
+let allCities=[];
+ISLANDS.forEach(is=>DATA[is].forEach(([city,prov,lat,lng])=>allCities.push({city,prov,lat,lng,island:is})));
+
+/* ===== STYLE MapLibre (sama dengan index.html) ===== */
+const W_=(...s)=>['interpolate',['exponential',1.5],['zoom'],...s];
+function buildStyle(t){return{version:8,sources:{omt:{type:'vector',url:OFM}},layers:[
+  {id:'bg',type:'background',paint:{'background-color':t.bg}},
+  {id:'green',type:'fill',source:'omt','source-layer':'park',paint:{'fill-color':t.green,'fill-opacity':0.85}},
+  {id:'green-lc',type:'fill',source:'omt','source-layer':'landcover',filter:['match',['get','class'],['grass','wood','scrub','forest','meadow','park','garden'],true,false],paint:{'fill-color':t.green,'fill-opacity':0.6}},
+  {id:'water',type:'fill',source:'omt','source-layer':'water',paint:{'fill-color':t.water}},
+  {id:'waterway',type:'line',source:'omt','source-layer':'waterway',paint:{'line-color':t.water,'line-width':W_(10,0.4,14,1,18,3)}},
+  {id:'buildings',type:'fill',source:'omt','source-layer':'building',minzoom:13,paint:{'fill-color':t.building,'fill-opacity':0.55}},
+  {id:'buildings-line',type:'line',source:'omt','source-layer':'building',minzoom:14,paint:{'line-color':t.bline,'line-width':W_(14,0.2,16,0.4,18,0.8),'line-opacity':0.6}},
+  {id:'rail',type:'line',source:'omt','source-layer':'transportation',filter:['match',['get','class'],['rail','transit'],true,false],layout:{'line-cap':'round'},paint:{'line-color':t.road2,'line-width':W_(11,0.3,14,0.7,16,1.2,18,2.4),'line-dasharray':[3,2]}},
+  {id:'road-minor',type:'line',source:'omt','source-layer':'transportation',filter:['match',['get','class'],['minor','service','living_street'],true,false],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':t.road2,'line-opacity':0.85,'line-width':W_(12,0.28,14,0.5,15,0.8,16,1.3,18,3)}},
+  {id:'road-mid',type:'line',source:'omt','source-layer':'transportation',filter:['match',['get','class'],['secondary','tertiary'],true,false],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':t.road,'line-opacity':0.92,'line-width':W_(10,0.35,12,0.8,14,1.6,16,3.2,18,6)}},
+  {id:'road-major',type:'line',source:'omt','source-layer':'transportation',filter:['match',['get','class'],['motorway','trunk','primary'],true,false],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':t.road,'line-width':W_(9,0.5,11,1.1,13,2,15,3.8,17,8,18,12)}},
+]};}
+
+function fmtCoord(lat,lng){return Math.abs(lat).toFixed(4)+'° '+(lat>=0?'N':'S')+' / '+Math.abs(lng).toFixed(4)+'° '+(lng>=0?'E':'W');}
+function hexA(hex,a){let h=hex.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return`rgba(${r},${g},${b},${a})`;}
+
+/* ===== Thumbnail PETA NYATA untuk kartu katalog =====
+   Dirender lazy (saat kartu masuk layar) memakai satu peta tersembunyi + antrian, lalu di-cache.
+   Framing dibuat sama dengan poster (area kota seluas pratinjau besar). */
+const REF_W=900;                       // lebar referensi framing (zoom dasar pada ~900px)
+const thumbCache={};                   // key kota -> dataURL
+const thumbQueue=[];
+let thumbMap=null,thumbReady=false,thumbBusy=false;
+
+function initThumbMap(){
+  try{
+    thumbMap=new maplibregl.Map({container:'thumbmap',style:buildStyle(THEMES[0]),center:[106.8456,-6.2088],zoom:11,
+      attributionControl:false,interactive:false,preserveDrawingBuffer:true,
+      canvasContextAttributes:{preserveDrawingBuffer:true,antialias:true},fadeDuration:0});
+    thumbMap.on('load',()=>{thumbReady=true;pumpThumb();});
+  }catch(e){thumbReady=false;}
+}
+function thumbIdle(t=9000){return new Promise(res=>{let d=false;const f=()=>{if(!d){d=true;res();}};thumbMap.once('idle',f);setTimeout(f,t);});}
+
+function setThumb(img,url){if(img&&img.isConnected){img.src=url;img.parentElement.classList.add('loaded');}}
+
+async function pumpThumb(){
+  if(thumbBusy||!thumbReady||!thumbMap)return;
+  const job=thumbQueue.shift();if(!job)return;
+  thumbBusy=true;
+  try{
+    if(thumbCache[job.key]){setThumb(job.img,thumbCache[job.key]);}
+    else{
+      const el=document.getElementById('thumbmap');const Wt=el.clientWidth||320;
+      const z=(job.z||13)+Math.log2(Wt/REF_W);
+      thumbMap.jumpTo({center:[job.lng,job.lat],zoom:z,bearing:0,pitch:0});
+      await thumbIdle();
+      thumbMap.triggerRepaint();
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      const gl=thumbMap.getCanvas();
+      const c=document.createElement('canvas');c.width=gl.width;c.height=gl.height;
+      const cx=c.getContext('2d');cx.fillStyle=THEMES[0].bg;cx.fillRect(0,0,c.width,c.height);cx.drawImage(gl,0,0);
+      const url=c.toDataURL('image/jpeg',0.85);
+      thumbCache[job.key]=url;setThumb(job.img,url);
+    }
+  }catch(e){/* lewati kota yang gagal */}
+  thumbBusy=false;
+  if(thumbQueue.length)setTimeout(pumpThumb,8);
+}
+
+const thumbIO=new IntersectionObserver(entries=>{
+  entries.forEach(en=>{
+    if(!en.isIntersecting)return;
+    const pv=en.target;thumbIO.unobserve(pv);
+    const img=pv.querySelector('img.thumb'),key=pv.dataset.key;
+    if(thumbCache[key]){setThumb(img,thumbCache[key]);return;}
+    thumbQueue.push({key,lat:+pv.dataset.lat,lng:+pv.dataset.lng,z:+pv.dataset.z||13,img});
+    pumpThumb();
+  });
+},{rootMargin:'300px'});
+
+/* ===== KATALOG (render kartu + filter) ===== */
+const wrap=$('wrap');let activeIsland='Semua';
+const chips=$('chips');['Semua',...ISLANDS].forEach(is=>{const b=document.createElement('button');b.className='chip'+(is==='Semua'?' on':'');b.textContent=is;b.onclick=()=>{activeIsland=is;document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c===b));renderCatalog();};chips.appendChild(b);});
+
+function renderCatalog(){
+  const q=$('q').value.trim().toLowerCase();
+  wrap.innerHTML='';let shown=0;
+  ISLANDS.forEach(is=>{
+    if(activeIsland!=='Semua'&&activeIsland!==is)return;
+    const list=DATA[is].filter(([c,p])=>!q||c.toLowerCase().includes(q)||p.toLowerCase().includes(q));
+    if(!list.length)return;
+    const h=document.createElement('div');h.className='island';h.innerHTML=`${is} <span class="cnt">${list.length} kota</span>`;wrap.appendChild(h);
+    const g=document.createElement('div');g.className='grid';
+    list.forEach(([city,prov,lat,lng])=>{shown++;
+      const cell=document.createElement('div');cell.className='cell';
+      cell.innerHTML=`<div class="pv" data-key="${city}" data-lat="${lat}" data-lng="${lng}" data-z="13"><img class="thumb" alt=""><div class="ld">memuat…</div><div class="sc"></div><div class="nm">${city.toUpperCase()}</div></div>`+
+        `<div class="cap"><b>${city}</b><span>${prov}</span></div>`;
+      cell.onclick=()=>openEditor({city,prov,lat,lng,island:is});
+      g.appendChild(cell);
+      thumbIO.observe(cell.querySelector('.pv'));
+    });
+    wrap.appendChild(g);
+  });
+  if(!shown){
+    const e=document.createElement('div');e.className='empty';
+    e.innerHTML=q?`Tidak ada di katalog. <a href="#" id="geo">Cari "${$('q').value.trim()}" via OpenStreetMap →</a>`:'Tidak ada kota.';
+    wrap.appendChild(e);
+    if(q)$('geo').onclick=ev=>{ev.preventDefault();geoSearch($('q').value.trim());};
+  }
+}
+let qTimer;$('q').addEventListener('input',()=>{clearTimeout(qTimer);qTimer=setTimeout(renderCatalog,150);});
+
+/* pencarian OSM untuk kota di luar katalog */
+async function geoSearch(query){
+  const e=$('wrap').querySelector('.empty');if(e)e.innerHTML='Mencari…';
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&q='+encodeURIComponent(query));
+    const data=await r.json();
+    if(!data.length){if(e)e.textContent='Tidak ditemukan.';return;}
+    wrap.innerHTML='';const g=document.createElement('div');g.className='grid';
+    data.forEach(it=>{const a=it.address||{};const city=(it.name||it.display_name.split(',')[0]);const prov=[a.state||a.region||a.county,a.country].filter(Boolean).join(', ');
+      const lat=parseFloat(it.lat),lng=parseFloat(it.lon);
+      const cell=document.createElement('div');cell.className='cell';
+      cell.innerHTML=`<div class="pv" data-key="${city}|${lat.toFixed(3)}" data-lat="${lat}" data-lng="${lng}" data-z="13"><img class="thumb" alt=""><div class="ld">memuat…</div><div class="sc"></div><div class="nm">${city.toUpperCase()}</div></div><div class="cap"><b>${city}</b><span>${prov}</span></div>`;
+      cell.onclick=()=>openEditor({city,prov:prov||'Indonesia',lat,lng,island:''});
+      g.appendChild(cell);thumbIO.observe(cell.querySelector('.pv'));});
+    const back=document.createElement('div');back.className='island';back.innerHTML=`Hasil pencarian "${query}" <span class="cnt">klik untuk edit</span>`;
+    wrap.appendChild(back);wrap.appendChild(g);
+  }catch(err){if(e)e.textContent='Gagal mengakses pencarian (butuh internet).';}
+}
+
+/* ===== EDITOR / PREVIEW ===== */
+let map,curCity=null,coordEdited=false;
+function ensureMap(){
+  if(map)return;
+  map=new maplibregl.Map({container:'pmap',style:buildStyle(cur),center:[106.8456,-6.2088],zoom:13,
+    attributionControl:false,dragRotate:false,pitchWithRotate:false,
+    preserveDrawingBuffer:true,canvasContextAttributes:{preserveDrawingBuffer:true,antialias:true},fadeDuration:0});
+  map.on('load',()=>applyColors(cur));
+  map.on('move',()=>{const z=map.getZoom();$('zoom').value=z.toFixed(1);$('zval').textContent=z.toFixed(1);});
+  map.on('moveend',()=>{if(!coordEdited){const c=map.getCenter();$('pcoord').textContent=fmtCoord(c.lat,c.lng);}});
+}
+function paint(id,p,v){if(map&&map.getLayer(id))map.setPaintProperty(id,p,v);}
+function applyColors(t){
+  paint('bg','background-color',t.bg);paint('green','fill-color',t.green);paint('green-lc','fill-color',t.green);
+  paint('water','fill-color',t.water);paint('waterway','line-color',t.water);
+  paint('buildings','fill-color',t.building);paint('buildings-line','line-color',t.bline);
+  paint('rail','line-color',t.road2);paint('road-minor','line-color',t.road2);
+  paint('road-mid','line-color',t.road);paint('road-major','line-color',t.road);
+  $('posterFrame').style.background=t.bg;$('ptext').style.color=t.text;$('pwm').style.color=t.text;
+  $('c_bg').value=t.bg;$('c_road').value=t.road;$('c_road2').value=t.road2;$('c_water').value=t.water;$('c_green').value=t.green;$('c_text').value=t.text;
+  // feather + scrim overlay (pratinjau)
+  const f='10cqw';
+  $('feather').style.background=`linear-gradient(to bottom,${t.bg},transparent ${f}),linear-gradient(to top,${t.bg},transparent ${f}),linear-gradient(to right,${t.bg},transparent ${f}),linear-gradient(to left,${t.bg},transparent ${f})`;
+  $('scrim').style.background=`linear-gradient(to top,${hexA(t.bg,0.93)} 0%,${hexA(t.bg,0.74)} 26%,${hexA(t.bg,0)} 52%)`;
+}
+
+/* grid tema */
+const thEl=$('themes');
+THEMES.forEach(t=>{const d=document.createElement('div');d.className='th'+(t.id===cur.id?' on':'');d.dataset.id=t.id;
+  d.innerHTML=`<div class="sw"><i style="background:${t.bg}"></i><i style="background:${t.water}"></i><i style="background:${t.road}"></i></div><span>${t.name}</span>`;
+  d.onclick=()=>{cur={...t};document.querySelectorAll('.th').forEach(x=>x.classList.toggle('on',x.dataset.id===t.id));applyColors(cur);};
+  thEl.appendChild(d);});
+
+/* color pickers */
+const cmap={c_bg:'bg',c_road:'road',c_road2:'road2',c_water:'water',c_green:'green',c_text:'text'};
+Object.keys(cmap).forEach(id=>$(id).addEventListener('input',e=>{cur[cmap[id]]=e.target.value;if(cmap[id]==='green')cur.building=e.target.value;applyColors(cur);document.querySelectorAll('.th').forEach(x=>x.classList.remove('on'));}));
+
+/* teks */
+$('iTitle').addEventListener('input',e=>$('ptitle').textContent=e.target.value.toUpperCase());
+$('iSub').addEventListener('input',e=>$('psub').textContent=e.target.value.toUpperCase());
+$('t_coord').addEventListener('change',e=>$('pcoord').style.display=e.target.checked?'block':'none');
+$('t_osm').addEventListener('change',e=>$('pwm').style.display=e.target.checked?'block':'none');
+$('zoom').addEventListener('input',e=>{if(map)map.setZoom(parseFloat(e.target.value));});
+$('rand').onclick=()=>{const t=THEMES[Math.floor(Math.random()*THEMES.length)];cur={...t};document.querySelectorAll('.th').forEach(x=>x.classList.toggle('on',x.dataset.id===t.id));applyColors(cur);};
+
+function openEditor(c){
+  curCity=c;coordEdited=false;
+  $('modal').classList.add('show');
+  ensureMap();setTimeout(()=>map.resize(),60);
+  cur={...THEMES[0]};document.querySelectorAll('.th').forEach(x=>x.classList.toggle('on',x.dataset.id==='navy'));
+  $('mTitle').textContent=c.city;$('mProv').textContent=c.prov;
+  $('iTitle').value=c.city;$('iSub').value=(c.prov+', Indonesia');
+  $('ptitle').textContent=c.city.toUpperCase();$('psub').textContent=(c.prov+', Indonesia').toUpperCase();
+  $('pcoord').textContent=fmtCoord(c.lat,c.lng);$('pcoord').style.display='block';$('t_coord').checked=true;
+  $('t_osm').checked=false;$('pwm').style.display='none';
+  map.jumpTo({center:[c.lng,c.lat],zoom:13});$('zoom').value=13;$('zval').textContent='13';
+  applyColors(cur);
+}
+function closeEditor(){$('modal').classList.remove('show');}
+$('closeBtn').onclick=closeEditor;
+$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeEditor();});
+window.addEventListener('keydown',e=>{if(e.key==='Escape')closeEditor();});
+
+/* ===== EKSPOR A3 HD ===== */
+const A3W=3508,A3H=4961;
+function waitIdle(t=12000){return new Promise(res=>{let d=false;const f=()=>{if(!d){d=true;res();}};map.once('idle',f);setTimeout(f,t);});}
+
+async function download(){
+  if(!map||!curCity)return;
+  const ov=$('ovl');ov.style.display='flex';$('ovt').textContent='Merender A3 HD…';
+  const mapEl=$('pmap');
+  const camZoom=map.getZoom(),camCenter=map.getCenter();
+  const prevW=mapEl.style.width,prevH=mapEl.style.height;
+  try{
+    try{await document.fonts.load(`600 64px "${FONT}"`);await document.fonts.load(`400 32px "${FONT}"`);}catch(_){}
+    const Wp=mapEl.clientWidth||400;
+    const dpr=window.devicePixelRatio||1;
+    const capH=Math.min(4096,A3H),cssH=Math.round(capH/dpr),cssW=Math.round(cssH*0.7071);
+    const effZoom=camZoom+Math.log2(cssW/Wp);
+    mapEl.style.width=cssW+'px';mapEl.style.height=cssH+'px';map.resize();
+    map.jumpTo({center:camCenter,zoom:effZoom,bearing:0,pitch:0});
+    await waitIdle();map.triggerRepaint();
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    const gl=map.getCanvas();
+    const blob=await composite(gl);
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='poster-'+curCity.city.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png';a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  }catch(err){alert('Gagal: '+err.message);console.error(err);}
+  finally{
+    mapEl.style.width=prevW;mapEl.style.height=prevH;map.resize();
+    map.jumpTo({center:camCenter,zoom:camZoom});ov.style.display='none';
+  }
+}
+$('dl').onclick=download;
+
+async function composite(gl){
+  const Wd=A3W,Hd=A3H,cx=Wd/2;
+  const cv=document.createElement('canvas');cv.width=Wd;cv.height=Hd;const ctx=cv.getContext('2d');
+  ctx.fillStyle=cur.bg;ctx.fillRect(0,0,Wd,Hd);
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  ctx.drawImage(gl,0,0,gl.width,gl.height,0,0,Wd,Hd);
+
+  // feather
+  {const f=0.10*Wd,bg=cur.bg;let g;
+   g=ctx.createLinearGradient(0,0,0,f);g.addColorStop(0,bg);g.addColorStop(1,hexA(bg,0));ctx.fillStyle=g;ctx.fillRect(0,0,Wd,f);
+   g=ctx.createLinearGradient(0,Hd,0,Hd-f);g.addColorStop(0,bg);g.addColorStop(1,hexA(bg,0));ctx.fillStyle=g;ctx.fillRect(0,Hd-f,Wd,f);
+   g=ctx.createLinearGradient(0,0,f,0);g.addColorStop(0,bg);g.addColorStop(1,hexA(bg,0));ctx.fillStyle=g;ctx.fillRect(0,0,f,Hd);
+   g=ctx.createLinearGradient(Wd,0,Wd-f,0);g.addColorStop(0,bg);g.addColorStop(1,hexA(bg,0));ctx.fillStyle=g;ctx.fillRect(Wd-f,0,f,Hd);}
+
+  const title=$('iTitle').value.toUpperCase();
+  const sub=$('iSub').value.toUpperCase();
+  const coord=$('pcoord').textContent,showC=$('t_coord').checked,showOsm=$('t_osm').checked;
+
+  const items=[];
+  const addT=(text,fs,weight,trackEm,alpha)=>items.push({k:'t',text,fs,weight,track:trackEm*fs,alpha});
+  const gap=h=>items.push({k:'g',h});
+  let tf=Wd*0.058;ctx.font=`600 ${tf}px "${FONT}"`;ctx.letterSpacing=(tf*0.16)+'px';
+  while(ctx.measureText(title).width>Wd*0.84&&tf>Wd*0.02){tf-=Wd*0.002;ctx.font=`600 ${tf}px "${FONT}"`;}
+  const tw=Math.min(ctx.measureText(title).width,Wd*0.84);ctx.letterSpacing='0px';
+  items.push({k:'title',text:title,fs:tf});
+  gap(Wd*0.026);items.push({k:'ul',fs:Wd*0.005});
+  gap(Wd*0.024);addT(sub,Wd*0.024,400,0.32,0.9);
+  if(showC&&coord){gap(Wd*0.022);addT(coord,Wd*0.020,400,0.18,0.68);}
+
+  const ih=it=>it.k==='g'?it.h:it.fs;
+  const total=items.reduce((s,it)=>s+ih(it),0);
+  const pad=Wd*0.09;let y=Hd-pad-total;const blockTop=y;
+  {const bg=cur.bg,s=blockTop-Wd*0.10;const g=ctx.createLinearGradient(0,s,0,Hd);
+   g.addColorStop(0,hexA(bg,0));g.addColorStop(0.5,hexA(bg,0.74));g.addColorStop(1,hexA(bg,0.93));ctx.fillStyle=g;ctx.fillRect(0,s,Wd,Hd-s);}
+  ctx.textAlign='center';ctx.textBaseline='top';
+  for(const it of items){
+    if(it.k==='g'){y+=it.h;continue;}
+    if(it.k==='ul'){const ly=y+it.fs/2;ctx.globalAlpha=.85;ctx.strokeStyle=cur.text;ctx.lineWidth=Math.max(1,Wd*0.0022);
+      ctx.beginPath();ctx.moveTo(cx-tw/2,ly);ctx.lineTo(cx+tw/2,ly);ctx.stroke();ctx.globalAlpha=1;y+=it.fs;continue;}
+    const weight=it.k==='title'?600:it.weight,track=it.k==='title'?it.fs*0.16:it.track;
+    ctx.font=`${weight} ${it.fs}px "${FONT}"`;ctx.letterSpacing=track+'px';
+    ctx.globalAlpha=it.alpha==null?1:it.alpha;ctx.fillStyle=cur.text;ctx.fillText(it.text,cx,y);
+    ctx.globalAlpha=1;ctx.letterSpacing='0px';y+=it.fs;
+  }
+  if(showOsm){ctx.textBaseline='bottom';ctx.font=`400 ${Wd*0.0105}px "${FONT}"`;ctx.fillStyle=cur.text;
+    ctx.letterSpacing='0px';ctx.globalAlpha=.3;ctx.textAlign='right';ctx.fillText('© OpenStreetMap',Wd-Wd*0.045,Hd-Wd*0.035);ctx.globalAlpha=1;}
+  return await new Promise(r=>cv.toBlob(r,'image/png'));
+}
+
+/* init */
+initThumbMap();
+renderCatalog();
+</script>
+</body>
+</html>
