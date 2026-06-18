@@ -2,6 +2,17 @@
 
 Aplikasi web (satu file `index.html`) untuk membuat poster peta personal dari data OpenStreetMap.
 
+## Katalog kota Indonesia (preview + edit) — `katalog.html`
+
+Halaman katalog bergaya "platform poster": **101 kota se-Indonesia tersusun per pulau**
+(Sumatra, Jawa, Bali & Nusa Tenggara, Kalimantan, Sulawesi, Maluku, Papua), dengan **pencarian** dan **filter per pulau**.
+
+Klik kartu kota → terbuka **editor pratinjau langsung**: ganti **tema/warna** (latar, jalan, air, taman, teks), atur **zoom**,
+ubah **judul/subjudul**, lalu **Unduh A3 HD** (3508 × 4961 px, 300 DPI) tanpa watermark.
+Kota di luar katalog bisa dicari lewat OpenStreetMap (Nominatim) langsung dari kotak pencarian.
+
+Butuh internet yang tidak memblokir `tiles.openfreemap.org`. Bisa dibuka lokal atau dari situs yang dideploy (`/katalog.html`).
+
 ## Batch ibu kota Indonesia (A3 HD) — `batch.html`
 
 `batch.html` membuat poster ke-38 ibu kota provinsi Indonesia sekaligus dalam ukuran **A3 HD (3508 × 4961 px, 300 DPI)**,
