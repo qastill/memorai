@@ -78,6 +78,13 @@
   .preset .pv .ul{display:block;width:26px;height:1.5px;margin-top:5px;border-radius:2px;opacity:.85}
   .preset .meta{padding:8px 11px;font-size:10.5px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:6px;background:var(--panel)}
   .preset .meta span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* thumbnail PETA NYATA (dirender lazy dari peta tersembunyi, lalu di-cache) */
+  .preset .pv img.thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;z-index:0;opacity:0;transition:opacity .4s}
+  .preset .pv.loaded img.thumb{opacity:1}
+  .preset .pv .ph{position:absolute;inset:0;z-index:0;background:linear-gradient(110deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.14) 50%,rgba(255,255,255,0) 70%);background-size:220% 100%;animation:pvshim 1.3s linear infinite}
+  .preset .pv.loaded .ph{display:none}
+  @keyframes pvshim{to{background-position:-220% 0}}
+  #thumbmap{position:fixed;left:-9999px;top:0;width:340px;height:300px;pointer-events:none;opacity:.01}
 
   .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
   .chip{font-size:11.5px;padding:6px 12px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);cursor:pointer;color:var(--muted);transition:.15s}
@@ -364,6 +371,7 @@
   </aside>
 
   <main id="stage">
+    <div id="thumbmap"></div>
     <div id="poster">
       <div id="map"></div>
       <div id="feather"></div>
@@ -538,26 +546,71 @@ const PRESETS=[
  {id:'p10',name:'Rumah Hangat',    theme:'krem',  font:'Poppins',            pos:'bottom', ul:'line', marker:'dot',   feather:10, tpl:'OUR HOME'},
 ];
 const MGLYPH={none:'·',dot:'●',ring:'◎',heart:'♥',star:'★',cross:'✚'};
-/* air = biru default, taman = hijau default; nada disesuaikan tema terang/gelap */
-function relLum(hex){let h=hex.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return(0.299*r+0.587*g+0.114*b)/255;}
-function pvColors(t){return relLum(t.bg)<0.5?{pw:'#35608c',pg:'#33623f'}:{pw:'#aacbed',pg:'#c7e2b9'};}
-/* mini-peta mirip poster jadi: taman (hijau), sungai (biru), jaringan jalan */
-function pvSVG(t,pw,pg){const r=t.road,r2=t.road2;let g='';
-  g+=`<path d="M-4,82 Q15,66 32,80 Q47,91 61,84 L63,124 L-4,124 Z" fill="${pg}" opacity="0.92"/>`;
-  g+=`<rect x="71" y="11" width="40" height="31" rx="8" fill="${pg}" opacity="0.82"/>`;
-  g+=`<path d="M-4,24 C22,35 27,58 50,64 C73,70 79,99 106,105" fill="none" stroke="${pw}" stroke-width="9" stroke-linecap="round" opacity="0.95"/>`;
-  for(let i=0;i<6;i++){const x=i*22-6;g+=`<line x1="${x}" y1="-2" x2="${x+10}" y2="122" stroke="${r2}" stroke-width="0.8" opacity="0.42"/>`;}
-  for(let i=0;i<7;i++){const y=i*20-4;g+=`<line x1="-2" y1="${y}" x2="102" y2="${y+8}" stroke="${r2}" stroke-width="0.8" opacity="0.42"/>`;}
-  g+=`<line x1="-4" y1="44" x2="106" y2="62" stroke="${r}" stroke-width="2.4" stroke-linecap="round"/>`;
-  g+=`<line x1="36" y1="-4" x2="60" y2="124" stroke="${r}" stroke-width="2.4" stroke-linecap="round"/>`;
-  g+=`<line x1="-4" y1="96" x2="106" y2="34" stroke="${r}" stroke-width="1.5" stroke-linecap="round" opacity="0.85"/>`;
-  return `<svg viewBox="0 0 100 120" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">${g}</svg>`;}
+
+/* ===== Thumbnail PETA NYATA untuk kartu preset (seperti hasil cetak) =====
+   Dirender lazy (saat kartu masuk layar) memakai satu peta tersembunyi + antrian, lalu di-cache. */
+const thumbCache={};const thumbQueue=[];let thumbMap=null,thumbReady=false,thumbBusy=false;
+function initThumbMap(){
+  try{
+    thumbMap=new maplibregl.Map({container:'thumbmap',style:buildStyle(THEMES[0]),center:[98.6742,3.5895],zoom:13,
+      attributionControl:false,interactive:false,preserveDrawingBuffer:true,
+      canvasContextAttributes:{preserveDrawingBuffer:true,antialias:true},fadeDuration:0});
+    thumbMap.on('load',()=>{thumbReady=true;pumpThumb();});
+  }catch(e){thumbReady=false;}
+}
+function thumbIdle(t=9000){return new Promise(res=>{let d=false;const f=()=>{if(!d){d=true;res();}};thumbMap.once('idle',f);setTimeout(f,t);});}
+function setThumb(img,url){if(img&&img.isConnected){img.src=url;img.parentElement.classList.add('loaded');}}
+function paintT(id,p,v){if(thumbMap&&thumbMap.getLayer(id))thumbMap.setPaintProperty(id,p,v);}
+function applyThumbTheme(t){
+  paintT('bg','background-color',t.bg);paintT('green','fill-color',t.green);paintT('green-lc','fill-color',t.green);
+  paintT('water','fill-color',t.water);paintT('waterway','line-color',t.water);
+  paintT('buildings','fill-color',t.building);paintT('buildings-line','line-color',t.bline);
+  paintT('rail','line-color',t.road2);paintT('road-minor','line-color',t.road2);
+  paintT('road-mid','line-color',t.road);paintT('road-major','line-color',t.road);
+}
+async function pumpThumb(){
+  if(thumbBusy||!thumbReady||!thumbMap)return;
+  const job=thumbQueue.shift();if(!job)return;
+  thumbBusy=true;
+  try{
+    if(thumbCache[job.key]){setThumb(job.img,thumbCache[job.key]);}
+    else{
+      const th=job.theme||THEMES[0];applyThumbTheme(th);
+      const ctr=(map&&map.getCenter())?map.getCenter():{lng:98.6742,lat:3.5895};
+      const zm=(map&&map.getZoom())?map.getZoom():13;
+      thumbMap.jumpTo({center:[ctr.lng,ctr.lat],zoom:zm,bearing:0,pitch:0});
+      await thumbIdle();
+      thumbMap.triggerRepaint();
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      const gl=thumbMap.getCanvas();
+      const c=document.createElement('canvas');c.width=gl.width;c.height=gl.height;
+      const cx=c.getContext('2d');cx.fillStyle=th.bg;cx.fillRect(0,0,c.width,c.height);cx.drawImage(gl,0,0);
+      const url=c.toDataURL('image/jpeg',0.86);
+      thumbCache[job.key]=url;setThumb(job.img,url);
+    }
+  }catch(e){/* lewati yang gagal */}
+  thumbBusy=false;
+  if(thumbQueue.length)setTimeout(pumpThumb,8);
+}
+const presetJobs={};let pjobSeq=0;
+const thumbIO=new IntersectionObserver(entries=>{
+  entries.forEach(en=>{
+    if(!en.isIntersecting)return;
+    const pv=en.target;thumbIO.unobserve(pv);
+    const img=pv.querySelector('img.thumb'),job=presetJobs[pv.dataset.jobid];
+    if(!job)return;
+    if(thumbCache[job.key]){setThumb(img,thumbCache[job.key]);return;}
+    thumbQueue.push({...job,img});pumpThumb();
+  });
+},{rootMargin:'300px'});
+
 const pEl=$('presets');
-PRESETS.forEach(p=>{const t=THEMES.find(x=>x.id===p.theme);const pc=pvColors(t);const c=document.createElement('div');c.className='preset';c.dataset.id=p.id;
-  const scrim=p.pos==='top'?`linear-gradient(to bottom,${t.bg} 3%,${hexA(t.bg,0)} 50%)`
-    :p.pos==='center'?`linear-gradient(${hexA(t.bg,0)} 24%,${hexA(t.bg,0.88)} 50%,${hexA(t.bg,0)} 76%)`
-    :`linear-gradient(to top,${t.bg} 3%,${hexA(t.bg,0)} 50%)`;
-  c.innerHTML=`<div class="pv" style="background:${t.bg}">`+pvSVG(t,pc.pw,pc.pg)+
+PRESETS.forEach(p=>{const t=THEMES.find(x=>x.id===p.theme);const c=document.createElement('div');c.className='preset';c.dataset.id=p.id;
+  const scrim=p.pos==='top'?`linear-gradient(to bottom,${t.bg} 4%,${hexA(t.bg,.45)} 22%,${hexA(t.bg,0)} 55%)`
+    :p.pos==='center'?`linear-gradient(${hexA(t.bg,0)} 22%,${hexA(t.bg,.9)} 50%,${hexA(t.bg,0)} 78%)`
+    :`linear-gradient(to top,${t.bg} 4%,${hexA(t.bg,.45)} 22%,${hexA(t.bg,0)} 55%)`;
+  c.innerHTML=`<div class="pv" style="background:${t.bg}">`+
+    `<div class="ph"></div><img class="thumb" alt="">`+
     (p.marker!=='none'?`<div class="mk" style="color:${t.text}">${markerSVG(p.marker,t.text)}</div>`:'')+
     `<div class="grad" style="background:${scrim}"></div>`+
     `<div class="ttl pos-${p.pos}">`+
@@ -566,7 +619,11 @@ PRESETS.forEach(p=>{const t=THEMES.find(x=>x.id===p.theme);const pc=pvColors(t);
       (p.ul!=='none'?`<span class="ul" style="background:${t.text}"></span>`:'')+
     `</div></div>`+
     `<div class="meta"><span>${p.font}</span><span style="color:${t.text};font-size:13px">${MGLYPH[p.marker]}</span></div>`;
-  c.onclick=()=>applyPreset(p,c);pEl.appendChild(c);});
+  c.onclick=()=>applyPreset(p,c);pEl.appendChild(c);
+  const pv=c.querySelector('.pv');pv.dataset.jobid=String(++pjobSeq);
+  presetJobs[pv.dataset.jobid]={key:'preset-'+p.id,theme:t};
+  thumbIO.observe(pv);
+});
 function applyPreset(p,card){
   const t=THEMES.find(x=>x.id===p.theme);cur={...t};applyColors(cur);
   document.querySelectorAll('.theme').forEach(x=>x.classList.toggle('active',x.dataset.id===p.theme));
@@ -585,7 +642,7 @@ $('tpl').addEventListener('change',e=>{const v=e.target.value;
   if(TPL_MARK[v]&&!$('mp_on').checked)pickSeg('markSeg',TPL_MARK[v]);});
 
 /* MAP EVENTS */
-if(map){map.on('load',()=>{applyColors(cur);applyVis();refreshCoord();});
+if(map){map.on('load',()=>{applyColors(cur);applyVis();refreshCoord();if(window.maplibregl)initThumbMap();});
   map.on('move',()=>{$('zoom').value=map.getZoom().toFixed(1);$('zval').textContent=map.getZoom().toFixed(1);});
   map.on('moveend',refreshCoord);}
 
