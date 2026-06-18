@@ -4,10 +4,11 @@ Aplikasi web (satu file `index.html`) untuk membuat poster peta personal dari da
 
 ## Katalog kota Indonesia (preview + edit) — `katalog.html`
 
-Halaman katalog bergaya "platform poster": **seluruh 514 kabupaten & kota se-Indonesia tersusun per pulau**
-(Sumatra, Jawa, Bali & Nusa Tenggara, Kalimantan, Sulawesi, Maluku, Papua), urut **barat → timur**, dengan **pencarian**, **filter per pulau** dan **filter per provinsi**.
-Tiap nama berlabel **Kab./Kota** secara konsisten, dan titik peta memakai **koordinat ibu kota** tiap wilayah (sumber: Kepmendagri 2025 via dataset `cahyadsn/wilayah`, lat/long Google Maps).
-Tiap kartu menampilkan thumbnail peta asli (dirender lazy + cache).
+Halaman katalog bergaya "platform poster": **seluruh 514 kabupaten & kota se-Indonesia**, dijelajah **berjenjang**
+**Indonesia → Pulau → Provinsi → Kab/Kota** (breadcrumb), atau lewat **pencarian** langsung.
+Tiap nama berlabel **Kab./Kota** secara konsisten; titik peta memakai **koordinat ibu kota** tiap wilayah
+(sumber: Kepmendagri 2025 via dataset `cahyadsn/wilayah`, lat/long Google Maps).
+Tiap kartu menampilkan **thumbnail peta asli** (bangunan/rel/taman terlihat) dengan **tema warna berbeda-beda** untuk memberi gambaran ragam desain — dirender lazy + cache. Saat kota diklik, editor terbuka dengan tema kartu tersebut.
 
 Klik kartu kota → terbuka **editor pratinjau langsung**: ganti **tema/warna** (latar, jalan, air, taman, teks), atur **zoom**,
 ubah **judul/subjudul**, lalu **Unduh A3 HD** (3508 × 4961 px, 300 DPI) tanpa watermark.

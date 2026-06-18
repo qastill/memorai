@@ -18,10 +18,11 @@
   .tools{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:14px}
   .search{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
   .search input{flex:1;background:none;border:none;outline:none;color:var(--txt);font:inherit;font-size:14px}
-  select#provSel{background:var(--card);border:1px solid var(--line);color:var(--txt);font:inherit;font-size:13px;border-radius:10px;padding:9px 12px;max-width:220px;cursor:pointer}
-  .chips{display:flex;flex-wrap:wrap;gap:8px}
-  .chip{border:1px solid var(--line);background:transparent;color:var(--mut);border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500}
-  .chip.on{background:var(--accent);color:#1a1305;border-color:var(--accent);font-weight:600}
+  .crumb{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px;font-size:14px}
+  .crumb a{color:var(--accent);cursor:pointer;text-decoration:none;font-weight:600;padding:5px 10px;border:1px solid var(--line);border-radius:999px}
+  .crumb a:hover{background:rgba(232,179,57,.12)}
+  .crumb a:last-child{background:var(--accent);color:#1a1305;border-color:var(--accent)}
+  .crumb i{color:var(--mut);font-style:normal}
   .wrap{padding:18px 26px 60px;max-width:1280px;margin:0 auto}
   .island{margin:26px 0 6px;font-size:15px;letter-spacing:.5px;color:var(--accent);display:flex;align-items:center;gap:10px}
   .island .cnt{color:var(--mut);font-size:12px;font-weight:400}
@@ -33,8 +34,11 @@
   .cell .pv.loaded img.thumb{opacity:1}
   .cell .pv .ld{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#2a3b50;font-size:11px;letter-spacing:.5px}
   .cell .pv.loaded .ld{display:none}
-  .cell .pv .nm{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-size:12px;font-weight:600;letter-spacing:1.5px;color:#e8b339;z-index:2}
-  .cell .pv .sc{position:absolute;inset:0;background:linear-gradient(to top,#0a1726 4%,rgba(10,23,38,0) 42%);z-index:1}
+  /* mat/bingkai tipis agar terlihat "siap dibingkai" */
+  .cell .pv::after{content:'';position:absolute;inset:7px;border:1px solid rgba(255,255,255,.22);border-radius:3px;pointer-events:none;z-index:3}
+  .cell .pv .nm{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:12px;font-weight:700;letter-spacing:1.6px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.7);z-index:2}
+  .cell .pv .sc{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.6) 2%,rgba(0,0,0,0) 44%);z-index:1}
+  .cell .pv .badge{position:absolute;top:9px;left:9px;z-index:3;font-size:9px;font-weight:700;letter-spacing:1px;padding:3px 7px;border-radius:5px;background:rgba(0,0,0,.45);color:#fff;backdrop-filter:blur(2px)}
   .cell .cap{padding:9px 11px;font-size:12px}
   .cell .cap b{display:block;font-weight:600;font-size:13px}
   .cell .cap span{color:var(--mut);font-size:11px}
@@ -97,13 +101,12 @@
     <a href="batch.html" style="font-size:12px;font-weight:600;padding:7px 13px;border-radius:999px;text-decoration:none;background:transparent;color:#cdd9e6;border:1px solid #2a3b50">⚡ Batch 38 Kota</a>
   </nav>
   <h1><span class="dot"></span> MEMORA — Katalog Poster Kota Indonesia</h1>
-  <p class="sub"><b>Seluruh 514 kabupaten & kota se-Indonesia</b> tersusun per pulau, urut <b>barat → timur</b>, dititikkan pada <b>ibu kota</b> tiap wilayah. Filter per pulau / provinsi, lalu <b>atur warna, zoom & teks</b> di pratinjau, dan unduh poster <b>A3 HD (300 DPI)</b> tanpa watermark.
-  Tidak ketemu? Ketik nama tempat untuk dicari lewat OpenStreetMap.</p>
+  <p class="sub"><b>Seluruh 514 kabupaten & kota se-Indonesia</b>, jelajah berjenjang: <b>Indonesia → Pulau → Provinsi → Kab/Kota</b>. Tiap kartu pratinjau peta asli dalam <b>tema warna berbeda-beda</b>. Klik kota untuk <b>atur warna, zoom & teks</b>, lalu unduh poster <b>A3 HD (300 DPI)</b> tanpa watermark.
+  Atau ketik nama tempat untuk loncat langsung / cari lewat OpenStreetMap.</p>
   <div class="tools">
-    <div class="search"><span>🔎</span><input id="q" placeholder="Cari kab/kota… (mis. Bandung, Wakatobi, Solo)" /></div>
-    <select id="provSel" title="Filter provinsi"></select>
-    <div class="chips" id="chips"></div>
+    <div class="search"><span>🔎</span><input id="q" placeholder="Cari langsung kab/kota… (mis. Bandung, Wakatobi, Solo)" /></div>
   </div>
+  <div class="crumb" id="crumb"></div>
 </header>
 
 <div class="wrap" id="wrap"></div>
@@ -764,6 +767,16 @@ function thumbIdle(t=9000){return new Promise(res=>{let d=false;const f=()=>{if(
 
 function setThumb(img,url){if(img&&img.isConnected){img.src=url;img.parentElement.classList.add('loaded');}}
 
+/* terapkan tema ke peta thumbnail (agar tiap kartu bisa beda warna) */
+function paintT(id,p,v){if(thumbMap&&thumbMap.getLayer(id))thumbMap.setPaintProperty(id,p,v);}
+function applyThumbTheme(t){
+  paintT('bg','background-color',t.bg);paintT('green','fill-color',t.green);paintT('green-lc','fill-color',t.green);
+  paintT('water','fill-color',t.water);paintT('waterway','line-color',t.water);
+  paintT('buildings','fill-color',t.building);paintT('buildings-line','line-color',t.bline);
+  paintT('rail','line-color',t.road2);paintT('road-minor','line-color',t.road2);
+  paintT('road-mid','line-color',t.road);paintT('road-major','line-color',t.road);
+}
+
 async function pumpThumb(){
   if(thumbBusy||!thumbReady||!thumbMap)return;
   const job=thumbQueue.shift();if(!job)return;
@@ -771,95 +784,127 @@ async function pumpThumb(){
   try{
     if(thumbCache[job.key]){setThumb(job.img,thumbCache[job.key]);}
     else{
-      const el=document.getElementById('thumbmap');const Wt=el.clientWidth||320;
-      const z=(job.z||13)+Math.log2(Wt/REF_W);
-      thumbMap.jumpTo({center:[job.lng,job.lat],zoom:z,bearing:0,pitch:0});
+      const th=job.theme||THEMES[0];
+      applyThumbTheme(th);
+      if(job.kind==='bounds'&&job.bbox){
+        const cam=thumbMap.cameraForBounds([[job.bbox[0],job.bbox[1]],[job.bbox[2],job.bbox[3]]],{padding:16});
+        if(cam)thumbMap.jumpTo({center:cam.center,zoom:Math.min(cam.zoom,11.5),bearing:0,pitch:0});
+      }else{
+        thumbMap.jumpTo({center:[job.lng,job.lat],zoom:job.z||13,bearing:0,pitch:0});
+      }
       await thumbIdle();
       thumbMap.triggerRepaint();
       await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
       const gl=thumbMap.getCanvas();
       const c=document.createElement('canvas');c.width=gl.width;c.height=gl.height;
-      const cx=c.getContext('2d');cx.fillStyle=THEMES[0].bg;cx.fillRect(0,0,c.width,c.height);cx.drawImage(gl,0,0);
-      const url=c.toDataURL('image/jpeg',0.85);
+      const cx=c.getContext('2d');cx.fillStyle=th.bg;cx.fillRect(0,0,c.width,c.height);cx.drawImage(gl,0,0);
+      const url=c.toDataURL('image/jpeg',0.86);
       thumbCache[job.key]=url;setThumb(job.img,url);
     }
-  }catch(e){/* lewati kota yang gagal */}
+  }catch(e){/* lewati yang gagal */}
   thumbBusy=false;
   if(thumbQueue.length)setTimeout(pumpThumb,8);
 }
 
+const jobs={};let jobSeq=0;
 const thumbIO=new IntersectionObserver(entries=>{
   entries.forEach(en=>{
     if(!en.isIntersecting)return;
     const pv=en.target;thumbIO.unobserve(pv);
-    const img=pv.querySelector('img.thumb'),key=pv.dataset.key;
-    if(thumbCache[key]){setThumb(img,thumbCache[key]);return;}
-    thumbQueue.push({key,lat:+pv.dataset.lat,lng:+pv.dataset.lng,z:+pv.dataset.z||13,img});
-    pumpThumb();
+    const img=pv.querySelector('img.thumb'),job=jobs[pv.dataset.jobid];
+    if(!job)return;
+    if(thumbCache[job.key]){setThumb(img,thumbCache[job.key]);return;}
+    thumbQueue.push({...job,img});pumpThumb();
   });
-},{rootMargin:'300px'});
+},{rootMargin:'320px'});
 
-/* ===== KATALOG (render kartu + filter) ===== */
-const wrap=$('wrap');let activeIsland='Semua',activeProv='Semua';
-/* provinsi per pulau (urut kemunculan = barat→timur) */
+/* ===== KATALOG BERJENJANG: Indonesia → Pulau → Provinsi → Kab/Kota ===== */
+const wrap=$('wrap');
 const PROV_BY_ISLAND={};ISLANDS.forEach(is=>{const seen=[];DATA[is].forEach(([,p])=>{if(!seen.includes(p))seen.push(p);});PROV_BY_ISLAND[is]=seen;});
-const provSel=$('provSel');
-function fillProvSel(){
-  const provs=activeIsland==='Semua'?ISLANDS.flatMap(is=>PROV_BY_ISLAND[is]):PROV_BY_ISLAND[activeIsland]||[];
-  provSel.innerHTML='<option value="Semua">Semua provinsi</option>'+provs.map(p=>`<option value="${p}">${p}</option>`).join('');
-  provSel.value=provs.includes(activeProv)?activeProv:'Semua';
-  if(provSel.value==='Semua')activeProv='Semua';
+function hashStr(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h);}
+function themeAt(i){return THEMES[((i%THEMES.length)+THEMES.length)%THEMES.length];}
+function themeFor(name){return THEMES[hashStr(name)%THEMES.length];}
+function bboxOf(list){let w=999,s=999,e=-999,n=-999;list.forEach(c=>{w=Math.min(w,c.lng);e=Math.max(e,c.lng);s=Math.min(s,c.lat);n=Math.max(n,c.lat);});const px=(e-w)*0.06||0.05,py=(n-s)*0.06||0.05;return [w-px,s-py,e+px,n+py];}
+
+let nav={level:'island',island:null,prov:null};
+
+function makeCard({title,sub,badge,job,onClick}){
+  const cell=document.createElement('div');cell.className='cell';
+  const jid='j'+(jobSeq++);jobs[jid]=job;
+  cell.innerHTML=`<div class="pv" data-jobid="${jid}"><img class="thumb" alt=""><div class="ld">memuat…</div><div class="sc"></div>`+
+    (badge?`<div class="badge">${badge}</div>`:'')+
+    `<div class="nm">${title.toUpperCase()}</div></div>`+
+    `<div class="cap"><b>${title}</b>${sub?`<span>${sub}</span>`:''}</div>`;
+  cell.onclick=onClick;
+  return cell;
 }
-provSel.addEventListener('change',()=>{activeProv=provSel.value;renderCatalog();});
+function gridStart(label,count){const h=document.createElement('div');h.className='island';h.innerHTML=`${label} <span class="cnt">${count}</span>`;wrap.appendChild(h);const g=document.createElement('div');g.className='grid';wrap.appendChild(g);return g;}
+function addCard(g,opt){const cell=makeCard(opt);g.appendChild(cell);thumbIO.observe(cell.querySelector('.pv'));}
 
-const chips=$('chips');['Semua',...ISLANDS].forEach(is=>{const b=document.createElement('button');b.className='chip'+(is==='Semua'?' on':'');b.textContent=is;b.onclick=()=>{activeIsland=is;activeProv='Semua';document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c===b));fillProvSel();renderCatalog();};chips.appendChild(b);});
+function renderCrumb(){
+  const c=$('crumb');const parts=[`<a data-go="island">🇮🇩 Indonesia</a>`];
+  if(nav.level==='prov'||nav.level==='city')parts.push(`<i>›</i><a data-go="prov">${nav.island}</a>`);
+  if(nav.level==='city')parts.push(`<i>›</i><a data-go="cur">${nav.prov}</a>`);
+  c.innerHTML=parts.join('');
+  c.querySelectorAll('a').forEach(a=>a.onclick=()=>{const g=a.dataset.go;
+    if(g==='island')nav={level:'island',island:null,prov:null};
+    else if(g==='prov')nav={level:'prov',island:nav.island,prov:null};
+    renderView();});
+}
 
-function renderCatalog(){
+function renderView(){
   const q=$('q').value.trim().toLowerCase();
-  wrap.innerHTML='';let shown=0;
-  ISLANDS.forEach(is=>{
-    if(activeIsland!=='Semua'&&activeIsland!==is)return;
-    const list=DATA[is].filter(([c,p])=>(activeProv==='Semua'||p===activeProv)&&(!q||c.toLowerCase().includes(q)||p.toLowerCase().includes(q)));
-    if(!list.length)return;
-    const h=document.createElement('div');h.className='island';h.innerHTML=`${is} <span class="cnt">${list.length} kab/kota</span>`;wrap.appendChild(h);
-    const g=document.createElement('div');g.className='grid';
-    list.forEach(([city,prov,lat,lng])=>{shown++;
-      const cell=document.createElement('div');cell.className='cell';
-      cell.innerHTML=`<div class="pv" data-key="${city}|${lat}" data-lat="${lat}" data-lng="${lng}" data-z="13"><img class="thumb" alt=""><div class="ld">memuat…</div><div class="sc"></div><div class="nm">${city.toUpperCase()}</div></div>`+
-        `<div class="cap"><b>${city}</b><span>${prov}</span></div>`;
-      cell.onclick=()=>openEditor({city,prov,lat,lng,island:is});
-      g.appendChild(cell);
-      thumbIO.observe(cell.querySelector('.pv'));
-    });
-    wrap.appendChild(g);
-  });
-  if(!shown){
-    const e=document.createElement('div');e.className='empty';
-    e.innerHTML=q?`Tidak ada di katalog. <a href="#" id="geo">Cari "${$('q').value.trim()}" via OpenStreetMap →</a>`:'Tidak ada kota.';
-    wrap.appendChild(e);
-    if(q)$('geo').onclick=ev=>{ev.preventDefault();geoSearch($('q').value.trim());};
+  wrap.innerHTML='';renderCrumb();
+  if(q){renderSearch(q);return;}
+  if(nav.level==='island'){
+    const g=gridStart('Pilih pulau',ISLANDS.length+' pulau');
+    ISLANDS.forEach((is,i)=>{const list=allCities.filter(c=>c.island===is);
+      addCard(g,{title:is,sub:list.length+' kab/kota · '+(PROV_BY_ISLAND[is]||[]).length+' provinsi',badge:'PULAU',
+        job:{key:'isl|'+is,theme:themeAt(i),kind:'bounds',bbox:bboxOf(list)},
+        onClick:()=>{nav={level:'prov',island:is,prov:null};renderView();window.scrollTo(0,0);}});});
+  }else if(nav.level==='prov'){
+    const provs=PROV_BY_ISLAND[nav.island]||[];
+    const g=gridStart(nav.island,provs.length+' provinsi');
+    provs.forEach((p,i)=>{const list=allCities.filter(c=>c.prov===p);
+      addCard(g,{title:p,sub:list.length+' kab/kota',badge:'PROVINSI',
+        job:{key:'prov|'+p,theme:themeAt(i+4),kind:'bounds',bbox:bboxOf(list)},
+        onClick:()=>{nav={level:'city',island:nav.island,prov:p};renderView();window.scrollTo(0,0);}});});
+  }else{
+    const list=allCities.filter(c=>c.prov===nav.prov).sort((a,b)=>a.lng-b.lng);
+    const g=gridStart(nav.prov,list.length+' kab/kota');
+    list.forEach(c=>addCard(g,{title:c.city,sub:c.prov,
+      job:{key:c.city+'|'+c.lat+'|c',theme:themeFor(c.city),kind:'point',lat:c.lat,lng:c.lng,z:13},
+      onClick:()=>openEditor({...c,theme:themeFor(c.city)})}));
   }
 }
-let qTimer;$('q').addEventListener('input',()=>{clearTimeout(qTimer);qTimer=setTimeout(renderCatalog,150);});
 
-/* pencarian OSM untuk kota di luar katalog */
+function renderSearch(q){
+  const list=allCities.filter(c=>c.city.toLowerCase().includes(q)||c.prov.toLowerCase().includes(q)).sort((a,b)=>a.lng-b.lng);
+  if(!list.length){const e=document.createElement('div');e.className='empty';
+    e.innerHTML=`Tidak ada di katalog. <a href="#" id="geo">Cari "${$('q').value.trim()}" via OpenStreetMap →</a>`;wrap.appendChild(e);
+    $('geo').onclick=ev=>{ev.preventDefault();geoSearch($('q').value.trim());};return;}
+  const g=gridStart(`Hasil "${$('q').value.trim()}"`,list.length+' kab/kota');
+  list.forEach(c=>addCard(g,{title:c.city,sub:c.prov,
+    job:{key:c.city+'|'+c.lat+'|c',theme:themeFor(c.city),kind:'point',lat:c.lat,lng:c.lng,z:13},
+    onClick:()=>openEditor({...c,theme:themeFor(c.city)})}));
+}
+let qTimer;$('q').addEventListener('input',()=>{clearTimeout(qTimer);qTimer=setTimeout(renderView,160);});
+
+/* pencarian OSM untuk tempat di luar katalog */
 async function geoSearch(query){
-  const e=$('wrap').querySelector('.empty');if(e)e.innerHTML='Mencari…';
+  wrap.innerHTML='';renderCrumb();const info=document.createElement('div');info.className='empty';info.textContent='Mencari…';wrap.appendChild(info);
   try{
-    const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&q='+encodeURIComponent(query));
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=8&q='+encodeURIComponent(query));
     const data=await r.json();
-    if(!data.length){if(e)e.textContent='Tidak ditemukan.';return;}
-    wrap.innerHTML='';const g=document.createElement('div');g.className='grid';
+    if(!data.length){info.textContent='Tidak ditemukan.';return;}
+    wrap.innerHTML='';renderCrumb();const g=gridStart(`Hasil pencarian "${query}"`,data.length+' tempat');
     data.forEach(it=>{const a=it.address||{};const city=(it.name||it.display_name.split(',')[0]);const prov=[a.state||a.region||a.county,a.country].filter(Boolean).join(', ');
       const lat=parseFloat(it.lat),lng=parseFloat(it.lon);
-      const cell=document.createElement('div');cell.className='cell';
-      cell.innerHTML=`<div class="pv" data-key="${city}|${lat.toFixed(3)}" data-lat="${lat}" data-lng="${lng}" data-z="13"><img class="thumb" alt=""><div class="ld">memuat…</div><div class="sc"></div><div class="nm">${city.toUpperCase()}</div></div><div class="cap"><b>${city}</b><span>${prov}</span></div>`;
-      cell.onclick=()=>openEditor({city,prov:prov||'Indonesia',lat,lng,island:''});
-      g.appendChild(cell);thumbIO.observe(cell.querySelector('.pv'));});
-    const back=document.createElement('div');back.className='island';back.innerHTML=`Hasil pencarian "${query}" <span class="cnt">klik untuk edit</span>`;
-    wrap.appendChild(back);wrap.appendChild(g);
-  }catch(err){if(e)e.textContent='Gagal mengakses pencarian (butuh internet).';}
+      addCard(g,{title:city,sub:prov,job:{key:city+'|'+lat.toFixed(3)+'|c',theme:themeFor(city),kind:'point',lat,lng,z:13},
+        onClick:()=>openEditor({city,prov:prov||'Indonesia',lat,lng,island:'',theme:themeFor(city)})});});
+  }catch(err){const e=wrap.querySelector('.empty');if(e)e.textContent='Gagal mengakses pencarian (butuh internet).';}
 }
+
 
 /* ===== EDITOR / PREVIEW ===== */
 let map,curCity=null,coordEdited=false;
@@ -910,7 +955,7 @@ function openEditor(c){
   curCity=c;coordEdited=false;
   $('modal').classList.add('show');
   ensureMap();setTimeout(()=>map.resize(),60);
-  cur={...THEMES[0]};document.querySelectorAll('.th').forEach(x=>x.classList.toggle('on',x.dataset.id==='navy'));
+  const t0=c.theme||THEMES[0];cur={...t0};document.querySelectorAll('.th').forEach(x=>x.classList.toggle('on',x.dataset.id===t0.id));
   $('mTitle').textContent=c.city;$('mProv').textContent=c.prov;
   $('iTitle').value=c.city;$('iSub').value=(c.prov+', Indonesia');
   $('ptitle').textContent=c.city.toUpperCase();$('psub').textContent=(c.prov+', Indonesia').toUpperCase();
@@ -1007,9 +1052,8 @@ async function composite(gl){
 }
 
 /* init */
-fillProvSel();
 initThumbMap();
-renderCatalog();
+renderView();
 </script>
 </body>
 </html>
