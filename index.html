@@ -145,6 +145,16 @@
   .wm{position:absolute;bottom:3.4cqw;font-size:1.05cqw;letter-spacing:.03em;color:currentColor;opacity:.4;z-index:6;font-family:'Outfit',sans-serif;pointer-events:none}
   #wmL{left:5cqw}#wmR{right:5cqw}
   #ptext,.wm,#marker,#frameline{color:#e8b339;transition:color .2s}
+  /* ==== TATA LETAK BINGKAI GALERI (gaya poster siap jual) ==== */
+  #poster.frame #map,#poster.frame #feather{inset:7cqw 7cqw 32cqw 7cqw}
+  #poster.frame #scrim{display:none}
+  #poster.frame #marker{top:41%}
+  #poster.frame #ptext.posbottom{bottom:13cqw}
+  #poster.frame #ptext.postop,#poster.frame #ptext.poscenter{bottom:13cqw;top:auto;transform:none}
+  #poster.frame #pcoords{margin-top:2cqw}
+  #poster.frame #frameline{display:block!important;inset:4cqw;opacity:.82;border-width:.16cqw}
+  #poster.frame #frameline::after{content:"";position:absolute;inset:1.3cqw;border:.11cqw solid currentColor}
+  #poster.frame #pvwm{top:32%}
 
   .maplibregl-ctrl-top-right{top:12px;right:12px}
   .maplibregl-ctrl-group{border-radius:9px!important;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.18)!important;opacity:.8;transition:opacity .15s}
@@ -301,6 +311,11 @@
         <div class="zoomrow"><span class="zv" style="text-align:left;width:auto;color:var(--muted)">Halus</span>
           <input type="range" id="d_featheramt" min="0" max="22" step="1" value="10" /><span class="zv" id="featherval">10</span></div>
         <div class="tog mt8">Bingkai garis tipis<label class="switch"><input type="checkbox" id="d_border"><span class="slider"></span></label></div>
+        <label class="fld mt12">Tata letak poster</label>
+        <div class="seg" id="layoutSeg" data-val="classic">
+          <button class="on" data-v="classic">Klasik</button><button data-v="frame">Bingkai galeri</button>
+        </div>
+        <div class="hint" style="margin-top:6px">Bingkai galeri: peta di bidang atas, nama kota di area bersih bawah, plus garis bingkai ganda — gaya poster siap jual seperti di marketplace.</div>
         <label class="fld mt10">Gaya garis bawah judul</label>
         <div class="seg" id="ulSeg" data-val="line">
           <button class="on" data-v="line">Garis</button><button data-v="dots">Titik</button><button data-v="none">Tanpa</button>
@@ -322,6 +337,11 @@
           <option value="2/3">Potret 2:3 (rekomendasi)</option><option value="3/4">Potret 3:4</option>
           <option value="0.7071">Seri A (A4/A3)</option><option value="1/1">Persegi 1:1</option><option value="3/2">Lanskap 3:2</option>
         </select>
+        <label class="fld mt12">Format unduhan</label>
+        <div class="seg" id="fmtSeg" data-val="jpg">
+          <button class="on" data-v="jpg">JPG HD</button><button data-v="png">PNG</button><button data-v="both">JPG + PNG</button>
+        </div>
+        <div class="hint" style="margin-top:6px">JPG HD: ukuran file kecil, pas untuk produk digital marketplace. PNG: tepi paling tajam. "JPG + PNG": unduh keduanya sekaligus.</div>
       </section>
 
       <section class="block">
@@ -487,7 +507,13 @@ function applyColors(t){
   applyFeather();applyScrim();renderMarker();if(window.renderMP)renderMP();
 }
 function applyFeather(){
-  const on=$('d_feather').checked;const f=$('d_featheramt').value+'cqw';
+  const f=$('d_featheramt').value+'cqw';
+  // Bingkai galeri: tepi peta tegas, hanya pudar lembut di bawah (selaras dengan hasil ekspor)
+  if($('poster').classList.contains('frame')){
+    $('feather').style.background=`linear-gradient(to top,${cur.bg},transparent 14cqw)`;
+    return;
+  }
+  const on=$('d_feather').checked;
   $('feather').style.background=on?`linear-gradient(to bottom,${cur.bg},transparent ${f}),linear-gradient(to top,${cur.bg},transparent ${f}),linear-gradient(to right,${cur.bg},transparent ${f}),linear-gradient(to left,${cur.bg},transparent ${f})`:'none';
 }
 function applyScrim(){
@@ -624,7 +650,16 @@ function seg(id,cb){const s=$(id);s.querySelectorAll('button').forEach(b=>b.oncl
 seg('posSeg',v=>{const p=$('ptext');p.className='pos'+v;p.dataset.pos=v;applyScrim();});
 seg('markSeg',v=>renderMarker());
 seg('ulSeg',v=>{const u=$('punderline');u.className=v;if(v==='dots')u.innerHTML='<i></i><i></i><i></i>';else u.innerHTML='';});
+seg('layoutSeg',()=>applyLayout());
+seg('fmtSeg',()=>{});
 $('ptext').dataset.pos='bottom';
+function applyLayout(){
+  const fr=($('layoutSeg').dataset.val==='frame');
+  $('poster').classList.toggle('frame',fr);
+  $('exportBtn').textContent=fr?'Unduh Poster Bingkai — tanpa watermark':'Unduh Poster — tanpa watermark';
+  applyFeather();
+  if(map)setTimeout(()=>map.resize(),60);
+}
 
 /* TITIK PERTEMUAN */
 let mpGeo=null,lastProj=null;
@@ -683,6 +718,7 @@ async function exportPoster(){
   try{
     const font=($('t_customfont').value.trim()||$('t_font').value);
     try{await document.fonts.load(`600 64px "${font}"`);await document.fonts.load(`italic 400 32px "${font}"`);await document.fonts.load(`500 32px "${font}"`);}catch(_){}
+    if(($('layoutSeg').dataset.val||'classic')==='frame'){await exportFrame(font);return;}
     const img=await captureMap(2200);$('ovtext').textContent='Menyusun poster…';
     const Wd=img.width,Hd=img.height,cx=Wd/2;
     const cv=document.createElement('canvas');cv.width=Wd;cv.height=Hd;const ctx=cv.getContext('2d');
@@ -757,10 +793,88 @@ async function exportPoster(){
     if(showOsm){ctx.globalAlpha=.3;ctx.textAlign='right';ctx.fillText('© OpenStreetMap',Wd-Wd*0.045,Hd-Wd*0.035);}
     ctx.globalAlpha=1;
 
-    const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download='poster-'+(title.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'peta')+'.png';a.click();URL.revokeObjectURL(a.href);
+    await outputCanvas(cv,'poster-'+(slugName(title)||'peta'));
   }catch(err){alert('Gagal mengekspor: '+err.message);console.error(err);}finally{ov.style.display='none';}
+}
+
+/* ====== UTIL EKSPOR BERSAMA ====== */
+function slugName(s){return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');}
+function aspectVal(){const v=$('aspect').value;if(v.includes('/')){const p=v.split('/').map(Number);return p[0]/p[1];}return parseFloat(v);}
+async function outputCanvas(cv,base){
+  const fmt=($('fmtSeg')?$('fmtSeg').dataset.val:'jpg')||'jpg';
+  const save=async(mime,ext,q)=>{const blob=await new Promise(r=>cv.toBlob(r,mime,q));const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=base+'.'+ext;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);};
+  if(fmt==='png'){await save('image/png','png');}
+  else if(fmt==='both'){await save('image/jpeg','jpg',0.94);await new Promise(r=>setTimeout(r,500));await save('image/png','png');}
+  else{await save('image/jpeg','jpg',0.94);}
+}
+function drawDoubleFrame(ctx,W,H,color){
+  ctx.save();ctx.strokeStyle=color;ctx.globalAlpha=.82;
+  const o=W*0.040,gap=W*0.013;
+  ctx.lineWidth=Math.max(1,W*0.0017);ctx.strokeRect(o,o,W-2*o,H-2*o);
+  ctx.lineWidth=Math.max(1,W*0.0011);ctx.strokeRect(o+gap,o+gap,W-2*(o+gap),H-2*(o+gap));
+  ctx.restore();
+}
+
+/* ====== TATA LETAK BINGKAI GALERI (peta atas + judul di area bersih) ====== */
+async function exportFrame(font){
+  $('ovtext').textContent='Merender peta resolusi tinggi…';
+  const img=await captureMap(2600);
+  $('ovtext').textContent='Menyusun poster bingkai…';
+  const M=0.07;                                  // margin peta (cqw) = persen lebar
+  const W=Math.round(img.width/(1-2*M));         // lebar poster dari lebar panel peta
+  const r=aspectVal();                           // rasio W/H
+  const H=Math.round(W/r);
+  const panelX=Math.round(M*W),panelY=Math.round(M*W);
+  const panelW=Math.round((1-2*M)*W),panelH=img.height;
+  const sx=panelW/img.width;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const ctx=cv.getContext('2d');
+  ctx.fillStyle=cur.bg;ctx.fillRect(0,0,W,H);
+  // bidang peta
+  ctx.drawImage(img,panelX,panelY,panelW,panelH);
+  // fade lembut tepi bawah peta ke latar
+  {const fh=panelH*0.14,gy=panelY+panelH;const g=ctx.createLinearGradient(0,gy-fh,0,gy);g.addColorStop(0,hexA(cur.bg,0));g.addColorStop(1,hexA(cur.bg,1));ctx.fillStyle=g;ctx.fillRect(panelX,gy-fh,panelW,fh);}
+  // marker
+  const mk=$('markSeg').dataset.val;
+  if(mk&&mk!=='none')drawMarkerC(ctx,panelX+panelW/2,panelY+panelH/2,W*0.030,mk);
+  if(lastProj){drawMarkerC(ctx,panelX+lastProj.x*sx,panelY+lastProj.y*sx,W*0.024,lastProj.type);
+    if(lastProj.label){ctx.save();ctx.font=`600 ${W*0.017}px "${font}"`;ctx.fillStyle=cur.text;ctx.textAlign='center';ctx.textBaseline='top';ctx.letterSpacing=(W*0.017*0.06)+'px';ctx.fillText(lastProj.label,panelX+lastProj.x*sx,panelY+lastProj.y*sx+W*0.022);ctx.restore();ctx.letterSpacing='0px';}}
+  // ===== blok teks di area bersih bawah =====
+  const title=($('t_title').value||'').toUpperCase();
+  const sub=($('t_sub').value||'').toUpperCase();
+  const coord=$('t_coord').value,showC=$('t_showcoord').checked;
+  const ul=$('ulSeg').dataset.val;
+  let tf=W*0.085;ctx.font=`600 ${tf}px "${font}"`;ctx.letterSpacing=(tf*0.14)+'px';
+  while(ctx.measureText(title).width>W*0.74&&tf>W*0.03){tf-=W*0.002;ctx.font=`600 ${tf}px "${font}"`;ctx.letterSpacing=(tf*0.14)+'px';}
+  const tw=Math.min(ctx.measureText(title).width,W*0.74);ctx.letterSpacing='0px';
+  const ulGap=W*0.030,ulH=(ul==='none'?0:W*0.006),subGap=W*0.032,subFs=W*0.024,subH=subFs;
+  let coordGap=0,coordFs=0;if(showC&&coord){coordGap=W*0.026;coordFs=W*0.019;}
+  const total=tf+ulGap+ulH+subGap+subH+coordGap+coordFs;
+  const areaTop=panelY+panelH,areaBot=H-W*0.075;
+  let y=areaTop+Math.max(0,((areaBot-areaTop)-total)/2);
+  ctx.textAlign='center';ctx.textBaseline='top';ctx.fillStyle=cur.text;
+  // judul
+  ctx.font=`600 ${tf}px "${font}"`;ctx.letterSpacing=(tf*0.14)+'px';ctx.fillText(title,W/2,y);ctx.letterSpacing='0px';y+=tf;
+  // garis bawah
+  y+=ulGap;
+  if(ul!=='none'){const ly=y+ulH/2;ctx.globalAlpha=.85;ctx.fillStyle=cur.text;ctx.strokeStyle=cur.text;
+    if(ul==='dots'){const g=W*0.022;[-1,0,1].forEach(k=>{ctx.beginPath();ctx.arc(W/2+k*g,ly,W*0.0045,0,7);ctx.fill();});}
+    else{ctx.lineWidth=Math.max(1,W*0.0016);ctx.beginPath();ctx.moveTo(W/2-tw/2,ly);ctx.lineTo(W/2+tw/2,ly);ctx.stroke();}
+    ctx.globalAlpha=1;}
+  y+=ulH;
+  // subjudul (negara/wilayah)
+  y+=subGap;
+  ctx.font=`400 ${subFs}px "${font}"`;ctx.letterSpacing=(subFs*0.34)+'px';ctx.globalAlpha=.9;ctx.fillStyle=cur.text;ctx.fillText(sub,W/2+subFs*0.17,y);ctx.globalAlpha=1;ctx.letterSpacing='0px';y+=subH;
+  // koordinat (opsional)
+  if(showC&&coord){y+=coordGap;ctx.font=`400 ${coordFs}px "${font}"`;ctx.letterSpacing=(coordFs*0.18)+'px';ctx.globalAlpha=.66;ctx.fillStyle=cur.text;ctx.fillText(coord,W/2+coordFs*0.09,y);ctx.globalAlpha=1;ctx.letterSpacing='0px';}
+  // bingkai ganda
+  drawDoubleFrame(ctx,W,H,cur.text);
+  // kredit kecil
+  const credit=$('t_credit').value,showOsm=$('t_osm').checked;
+  ctx.textBaseline='bottom';ctx.font=`400 ${W*0.0095}px "${font}"`;ctx.fillStyle=cur.text;ctx.letterSpacing='0px';
+  ctx.globalAlpha=.45;ctx.textAlign='left';if(credit)ctx.fillText(credit,W*0.066,H-W*0.055);
+  if(showOsm){ctx.globalAlpha=.3;ctx.textAlign='right';ctx.fillText('© OpenStreetMap',W-W*0.066,H-W*0.055);}
+  ctx.globalAlpha=1;
+  await outputCanvas(cv,'poster-'+(slugName($('t_title').value)||'peta'));
 }
 /* ====== PAYWALL / PEMBAYARAN ====== */
 const CONFIG={

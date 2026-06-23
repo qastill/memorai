@@ -2,6 +2,24 @@
 
 Aplikasi web (satu file `index.html`) untuk membuat poster peta personal dari data OpenStreetMap.
 
+## Dua tata letak: Klasik & Bingkai Galeri (siap jual)
+
+Di blok **Desain** ada pilihan **Tata letak poster**:
+
+- **Klasik** — judul & subjudul ditumpuk di atas peta (full-bleed) dengan gradasi halus. Cocok untuk poster personal/momen.
+- **Bingkai galeri** — gaya **produk digital marketplace** (mis. poster peta minimalis hitam-putih): peta menempati bidang atas, **nama kota** tampil besar di **area bersih** bawah, **subjudul negara/wilayah** dengan spasi huruf lebar, plus **garis bingkai ganda** tipis di tepi. Pakai tema **Monokrom** untuk tampilan hitam-putih klasik seperti contoh marketplace.
+
+### Format unduhan
+Di blok **Font & Ukuran** ada **Format unduhan**:
+
+- **JPG HD** (default) — ukuran file kecil, ideal sebagai produk digital yang dijual/diunduh pembeli.
+- **PNG** — tepi paling tajam, latar bisa solid.
+- **JPG + PNG** — unduh keduanya sekaligus (satu klik, dua berkas).
+
+Semua ukuran tetap resolusi tinggi (≈A3 300 DPI) dan **tanpa watermark** pada hasil unduhan.
+
+> **Kota seluruh dunia:** kotak **pencarian** memakai OpenStreetMap (Nominatim) tanpa batas negara — cari kota mana pun di dunia, atur bingkai/zoom, pilih *Bingkai galeri* + *JPG HD*, lalu unduh. Untuk produksi massal banyak kota sekaligus, lihat catatan di bawah (`batch.html` dapat diperluas ke daftar kota dunia).
+
 ## Katalog kota Indonesia (preview + edit) — `katalog.html`
 
 Halaman katalog bergaya "platform poster": **seluruh 514 kabupaten & kota se-Indonesia**, dijelajah **berjenjang**
