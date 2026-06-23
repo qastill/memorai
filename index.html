@@ -118,10 +118,6 @@
     height:86vh;width:auto;aspect-ratio:2/3;background:#0a1726;transition:aspect-ratio .25s;
     user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
   #poster img,#poster canvas{-webkit-user-drag:none;user-drag:none}
-  /* watermark pratinjau — satu tanda kecil di tengah-bawah, hanya tampil di layar, TIDAK ikut di file unduhan */
-  #pvwm{position:absolute;left:0;right:0;top:56%;z-index:7;pointer-events:none;text-align:center;
-    font-family:'Outfit',sans-serif;font-size:1.5cqw;font-weight:700;letter-spacing:.3em;
-    text-transform:uppercase;color:#fff;opacity:.5;mix-blend-mode:difference}
   #map{position:absolute;inset:0}
   #map.exporting{position:fixed;left:0;top:0;z-index:1}
   #feather{position:absolute;inset:0;z-index:2;pointer-events:none}
@@ -154,7 +150,6 @@
   #poster.frame #pcoords{margin-top:2cqw}
   #poster.frame #frameline{display:block!important;inset:4cqw;opacity:.82;border-width:.16cqw}
   #poster.frame #frameline::after{content:"";position:absolute;inset:1.3cqw;border:.11cqw solid currentColor}
-  #poster.frame #pvwm{top:32%}
 
   .maplibregl-ctrl-top-right{top:12px;right:12px}
   .maplibregl-ctrl-group{border-radius:9px!important;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.18)!important;opacity:.8;transition:opacity .15s}
@@ -373,7 +368,7 @@
           <p class="sub" style="margin-top:18px">Kredit</p>
           <label class="fld">Kredit kecil pojok kiri</label>
           <input type="text" id="t_credit" placeholder="mis. @namamu" />
-          <div class="tog mt8">Kredit OpenStreetMap (disarankan)<label class="switch"><input type="checkbox" id="t_osm" checked><span class="slider"></span></label></div>
+          <div class="tog mt8">Kredit OpenStreetMap (opsional)<label class="switch"><input type="checkbox" id="t_osm"><span class="slider"></span></label></div>
         </div>
       </details>
     </div>
@@ -400,8 +395,7 @@
         <div id="pcoords">3.5895° N / 98.6742° E</div>
       </div>
       <div class="wm" id="wmL"></div>
-      <div class="wm" id="wmR">© OpenStreetMap</div>
-      <div id="pvwm">MEMORA</div>
+      <div class="wm" id="wmR" style="display:none">© OpenStreetMap</div>
     </div>
     <div id="stagecredit">Peta © OpenStreetMap · OpenFreeMap</div>
   </main>
@@ -896,7 +890,8 @@ function openPay(){
 function closePay(){$('pay').style.display='none';}
 function unlock(){unlocked=true;closePay();doDownload();}
 async function doDownload(){await exportPoster();}
-$('exportBtn').onclick=openPay;
+// Pemakaian sendiri: tombol langsung mengunduh tanpa gerbang pembayaran.
+$('exportBtn').onclick=doDownload;
 /* anti-save sederhana: matikan klik-kanan & drag gambar pada poster */
 (()=>{const pst=$('poster');if(!pst)return;
   pst.addEventListener('contextmenu',e=>e.preventDefault());
