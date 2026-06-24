@@ -1,0 +1,32 @@
+/* halaman SEO Memora */
+*{box-sizing:border-box}body{margin:0;font-family:'Outfit',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#22201a;background:#f5f3ee;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:#a9791a;text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:880px;margin:0 auto;padding:0 20px}
+header.top{background:#fff;border-bottom:1px solid #e9e6dd}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{font-weight:800;letter-spacing:-.02em;font-size:18px;display:flex;align-items:center;gap:9px;color:#1e1d18}
+.brand .dot{width:8px;height:8px;border-radius:50%;background:#e8b339;display:inline-block}
+nav.menu a{font-size:13.5px;font-weight:600;color:#4a4740;margin-left:18px}
+.crumb{font-size:12.5px;color:#8b887d;padding:16px 0 0}
+.crumb a{color:#8b887d}
+h1{font-size:30px;line-height:1.15;letter-spacing:-.02em;margin:10px 0 6px}
+.lede{font-size:16px;color:#46443c;margin:0 0 18px}
+.hero{display:grid;grid-template-columns:1fr;gap:18px;margin:18px 0 26px}
+.cta{display:inline-block;background:#e8b339;color:#3a2a05;font-weight:700;padding:13px 22px;border-radius:11px;font-size:15px}
+.cta:hover{filter:brightness(1.04);text-decoration:none}
+.specs{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:8px 0 22px}
+.specs div{background:#fff;border:1px solid #e9e6dd;border-radius:10px;padding:11px 13px;font-size:13.5px}
+.specs b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#8b887d;margin-bottom:3px;font-weight:600}
+h2{font-size:19px;margin:28px 0 10px;letter-spacing:-.01em}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px}
+.chips a{background:#fff;border:1px solid #e9e6dd;border-radius:999px;padding:7px 13px;font-size:13px;color:#3a382f}
+.chips a:hover{border-color:#e8b339;text-decoration:none}
+.faq{margin:6px 0}.faq dt{font-weight:700;margin-top:14px}.faq dd{margin:4px 0 0;color:#46443c}
+footer{border-top:1px solid #e9e6dd;margin-top:36px;background:#fff}
+footer .wrap{padding:22px 20px;font-size:13px;color:#8b887d}
+footer a{color:#6b6862}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin:10px 0}
+.grid a{background:#fff;border:1px solid #e9e6dd;border-radius:10px;padding:12px 13px;font-size:14px;color:#22201a;font-weight:600}
+.grid a:hover{border-color:#e8b339;text-decoration:none}
+.grid a span{display:block;font-size:11.5px;color:#8b887d;font-weight:400;margin-top:2px}
+@media(max-width:560px){h1{font-size:25px}.specs{grid-template-columns:1fr}}

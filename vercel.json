@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/poster-peta/:slug", "destination": "/poster-peta/:slug.html" },
+    { "source": "/provinsi/:slug", "destination": "/provinsi/:slug.html" }
+  ]
+}
